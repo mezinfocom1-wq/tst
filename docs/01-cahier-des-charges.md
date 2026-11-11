@@ -3,7 +3,7 @@
 > Document vivant. Mis à jour à chaque décision.
 > Légende : **VALIDÉ** = décidé par le porteur du projet · **PROPOSITION** = recommandation en attente de validation · **À CONFIRMER** = décision ouverte.
 
-Version : 0.1 — Phase 1 (finalisation des exigences) — aucun code écrit à ce stade.
+Version : 0.2 — Phase 1 (finalisation des exigences) — aucun code écrit à ce stade.
 
 ---
 
@@ -45,6 +45,7 @@ Plateforme hybride destinée au marché marocain :
 | V-22 | Français + Arabe (RTL), devise MAD, fuseau horaire Maroc, i18n extensible | VALIDÉ |
 | V-23 | Architecture modulaire (pas de microservices), multi-tenant avec isolation stricte, RBAC, journalisation | VALIDÉ |
 | V-24 | Conformité à la réglementation marocaine sur les données personnelles | VALIDÉ |
+| V-25 | Rendez-vous et file d'attente cohabitent en **mode hybride avec priorité au rendez-vous** : la file remplit les intervalles libres entre les rendez-vous ; un client de la file n'est pas lancé si sa prestation empiète sur un rendez-vous ; chaque salon peut désactiver l'un des deux modes (D-01) | VALIDÉ |
 
 ## 3. Contradictions et tensions identifiées
 
@@ -52,7 +53,7 @@ Plateforme hybride destinée au marché marocain :
 |---|-------|---------|---------------------|
 | C-01 | Propriétaire vs membres d'équipe | « Pas de distinction propriétaire / professionnel » mais aussi « vue globale du propriétaire », « permissions des membres », « abonnement géré par le propriétaire ». | Une seule entité *Professionnel* ; la différence est portée par l'*appartenance au salon* (rôle `OWNER` ou `MEMBER`), pas par le type de compte. |
 | C-02 | Un seul rôle par compte | Un coiffeur ne pourrait pas réserver chez un confrère avec son compte professionnel. | Soit on l'assume (deux comptes), soit le rôle professionnel inclut les capacités client. → D-02 |
-| C-03 | Rendez-vous + file d'attente sur le même professionnel | Les deux modes consomment le même temps de travail ; aucune règle de priorité n'est définie. C'est le cœur du moteur de planification. | → D-01 (première question) |
+| C-03 | Rendez-vous + file d'attente sur le même professionnel | Les deux modes consomment le même temps de travail ; aucune règle de priorité n'est définie. C'est le cœur du moteur de planification. | **Résolu** : mode hybride, priorité au rendez-vous (V-25) |
 | C-04 | Compte obligatoire vs clients sans smartphone | Un client qui entre sans téléphone n'apparaît pas dans la file : les positions et estimations deviennent fausses. | Permettre au professionnel d'ajouter un « client de passage » manuellement. → D-05 |
 | C-05 | Paiement vs validation du salon | Les deux validations sont indépendantes mais l'ordre n'est pas défini : que se passe-t-il si le paiement est validé et le salon refusé (remboursement ? date de début de l'abonnement ?). | → D-06 |
 | C-06 | Statuts de paiement | « Expiré » et « Suspendu » sont des états d'abonnement, pas de paiement. | Deux machines à états distinctes : *Paiement* (en attente, à vérifier, validé, refusé) et *Abonnement* (en attente, actif, expiré, suspendu, annulé). PROPOSITION |
@@ -89,8 +90,9 @@ Plateforme hybride destinée au marché marocain :
 
 | # | Décision | Impact | Statut |
 |---|----------|--------|--------|
-| D-01 | Cohabitation rendez-vous / file d'attente pour un même professionnel | Moteur de planification, estimation, UX | À CONFIRMER — **question en cours** |
-| D-02 | Portée de « un seul rôle par compte » (un professionnel peut-il réserver comme client ?) | Modèle de comptes, application mobile | À CONFIRMER |
+| D-01 | Cohabitation rendez-vous / file d'attente pour un même professionnel | Moteur de planification, estimation, UX | **VALIDÉ** — option C, hybride avec priorité au rendez-vous |
+| D-01b | Paramètres du mode hybride : débordement toléré ou non sur un rendez-vous, comportement si le client du rendez-vous est en retard | Moteur de planification | À CONFIRMER (traité avec D-09) |
+| D-02 | Portée de « un seul rôle par compte » (un professionnel peut-il réserver comme client ?) | Modèle de comptes, application mobile | À CONFIRMER — **question en cours** |
 | D-03 | Modèle Organisation / Salon / Membres et rôles d'équipe | Multi-tenant, modèle de données | À CONFIRMER |
 | D-04 | File d'attente à distance : autorisée, limitée par distance, ou sur place uniquement | Anti-abus, géolocalisation | À CONFIRMER |
 | D-05 | Clients de passage ajoutés par le professionnel (file et rendez-vous) | Fiabilité de la file, modèle client | À CONFIRMER |
@@ -159,3 +161,4 @@ Plateforme hybride destinée au marché marocain :
 | Date | Décision | Réf. |
 |------|----------|------|
 | 2026-11-11 | Création du document à partir du cahier des charges initial. Aucune décision nouvelle. | — |
+| 2026-11-11 | Cohabitation rendez-vous / file d'attente : mode hybride avec priorité au rendez-vous ; chaque salon peut désactiver l'un des deux modes. | D-01, V-25 |

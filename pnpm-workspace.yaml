@@ -1,0 +1,12 @@
+packages:
+  - "apps/api"
+  - "apps/web"
+onlyBuiltDependencies:
+  - "@nestjs/core"
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "prisma"
+  - "argon2"
+  - "sharp"
+  - "esbuild"
+  - "unrs-resolver"

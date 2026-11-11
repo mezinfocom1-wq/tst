@@ -1,0 +1,13 @@
+{
+  "name": "salon-platform",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev:api": "pnpm --filter @salon/api dev",
+    "dev:web": "pnpm --filter @salon/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "db:migrate": "pnpm --filter @salon/api db:migrate",
+    "db:seed": "pnpm --filter @salon/api db:seed"
+  }
+}

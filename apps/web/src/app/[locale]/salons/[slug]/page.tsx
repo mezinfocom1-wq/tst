@@ -42,11 +42,11 @@ export default async function SalonPage({ params }: Props) {
         {salon.coverUrl && <img src={salon.coverUrl} alt="" className="size-full object-cover" />}
       </div>
       <div className="mx-auto max-w-6xl px-4">
-        <div className="-mt-10 flex flex-wrap items-end gap-4">
-          <div className="flex size-24 items-center justify-center overflow-hidden rounded-3xl border-4 border-sand bg-brand-100 text-brand-700 shadow-card">
+        <div className="-mt-10 flex items-start gap-4">
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border-4 border-sand bg-brand-100 text-brand-700 shadow-card">
             {salon.logoUrl ? <img src={salon.logoUrl} alt="" className="size-full object-cover" /> : <Scissors className="size-9" aria-hidden />}
           </div>
-          <div className="min-w-0 flex-1 pb-1">
+          <div className="min-w-0 flex-1 pt-12">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-3xl font-semibold">{salon.name}</h1>
               <Badge>{t(SALON_TYPE[salon.type])}</Badge>

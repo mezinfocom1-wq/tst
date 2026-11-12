@@ -1,5 +1,10 @@
-/** Utilitaires de style utilisables côté serveur comme côté navigateur. */
-export const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
+import { twMerge } from 'tailwind-merge';
+
+/**
+ * Assemble des classes Tailwind. En cas de conflit (par exemple `h-11` puis `h-9`), la dernière l'emporte :
+ * un composant peut ainsi surcharger proprement la taille par défaut d'un champ ou d'un bouton.
+ */
+export const cx = (...parts: (string | false | null | undefined)[]) => twMerge(parts.filter(Boolean).join(' '));
 
 export const VARIANTS = {
   primary: 'bg-ink text-white hover:bg-ink-soft',

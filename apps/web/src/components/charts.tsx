@@ -33,8 +33,12 @@ export function BarChart({ data, format = String, height = 180, title }: { data:
           ))}
         </div>
       </div>
-      <div className="mt-1.5 flex gap-0.5 pe-10 text-[10px] text-muted">
-        {data.map((d, i) => <span key={d.label} className="flex-1 truncate text-center">{i % step === 0 ? d.label : ''}</span>)}
+      <div className="mt-1.5 flex h-4 gap-0.5 pe-10 text-[10px] text-muted" aria-hidden>
+        {data.map((d, i) => (
+          <span key={d.label} className="relative flex-1">
+            {i % step === 0 && <span className="absolute start-1/2 -translate-x-1/2 whitespace-nowrap rtl:translate-x-1/2">{d.label}</span>}
+          </span>
+        ))}
       </div>
       <table className="sr-only">
         <caption>{title}</caption>

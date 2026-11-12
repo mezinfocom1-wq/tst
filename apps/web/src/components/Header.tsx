@@ -28,7 +28,7 @@ export function Header() {
 
   return (
     <header className="no-print sticky top-0 z-40 border-b border-line bg-sand/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:gap-6">
         <Link href={home} className="flex items-center gap-2 font-display text-xl font-semibold">
           <span className="flex size-9 items-center justify-center rounded-xl bg-ink text-brand-300"><Scissors className="size-5" aria-hidden /></span>
           Salonat
@@ -45,7 +45,7 @@ export function Header() {
           {!loading && !user && (
             <>
               <Link href={`${home}/login`} className={cx(buttonClass('ghost', 'sm'), 'hidden sm:inline-flex')}>{t('Connexion')}</Link>
-              <Link href={`${home}/register`} className={buttonClass('primary', 'sm')}>{t('Créer un compte')}</Link>
+              <Link href={`${home}/register`} className={cx(buttonClass('primary', 'sm'), 'hidden sm:inline-flex')}>{t('Créer un compte')}</Link>
             </>
           )}
           {user && (
@@ -67,7 +67,7 @@ export function Header() {
       </div>
       {open && (
         <nav className="border-t border-line px-4 py-3 md:hidden">
-          {[...links, ...(user ? [] : [{ href: `${home}/login`, label: t('Connexion') }])].map((l) => (
+          {[...links, ...(user ? [] : [{ href: `${home}/login`, label: t('Connexion') }, { href: `${home}/register`, label: t('Créer un compte') }])].map((l) => (
             <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-lg px-2 py-2.5 text-sm text-ink-soft hover:bg-sand-deep">{l.label}</Link>
           ))}
         </nav>

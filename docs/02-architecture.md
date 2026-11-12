@@ -51,6 +51,19 @@
 - Toute lecture ou modification par identifiant ajoute `salonId` au filtre : une ressource d'un autre salon répond « introuvable ».
 - Les tests `isolation entre salons` vérifient qu'un professionnel ne peut ni lire ni modifier les prestations, l'équipe, les rendez-vous, les tickets, les paiements et les preuves d'un autre salon.
 
+### Rôles dans un salon
+
+| Action | Propriétaire | Membre invité |
+|--------|:---:|:---:|
+| Planning, file d'attente, ajout d'un client de passage | ✔ | ✔ |
+| Ses propres horaires et absences | ✔ | ✔ |
+| Horaires des autres, prestations, équipe, fiche et réglages du salon | ✔ | — |
+| Fidélité (réglages), réponses aux avis | ✔ | — |
+| Clients, statistiques, abonnement et paiements | ✔ | — |
+
+Un membre est invité par email (lien à usage unique, valable 7 jours, lié à l'adresse invitée). Un compte n'appartient qu'à un seul salon.
+Le retrait d'accès est immédiat : les droits sont relus en base à chaque requête.
+
 ## 4. Double réservation et atomicité
 
 - Contrainte d'exclusion PostgreSQL sur `Appointment` (`staffId`, intervalle `startAt`–`endAt`) pour les statuts actifs : deux rendez-vous d'un même professionnel ne peuvent pas se chevaucher, quelle que soit la concurrence. Écrite en SQL dans la migration, car Prisma ne l'exprime pas.
@@ -78,6 +91,7 @@
 - Limitation de débit globale et renforcée sur l'authentification ; en-têtes de sécurité (Helmet, en-têtes Next.js).
 - Fichiers : type vérifié sur le contenu, taille limitée ; preuves de paiement privées, servies par une route authentifiée et journalisée.
 - Actions sensibles journalisées (`AuditLog`), consultables dans le back-office.
+- Données personnelles : export complet (`GET /api/me/export`) et suppression du compte (`POST /api/me/delete`) — identité effacée, réservations futures annulées, historique des salons conservé sous forme anonyme.
 
 ## 7. Abonnements
 

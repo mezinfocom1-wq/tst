@@ -51,10 +51,11 @@ Application mobile : voir [`docs/03-exploitation.md`](docs/03-exploitation.md#4-
 
 ```bash
 createdb salon_test --owner salon
-pnpm --filter @salon/api test       # 44 tests : sécurité, isolation entre salons, réservations simultanées, file, abonnements
+pnpm --filter @salon/api test       # 48 tests : sécurité, isolation entre salons, réservations simultanées, file, abonnements, équipe, données personnelles
 pnpm --filter @salon/web typecheck && pnpm --filter @salon/web build
 cd apps/mobile && npm run typecheck
 node apps/web/e2e/smoke.js          # parcours complets dans un navigateur (API et site démarrés, données de démonstration)
+node apps/web/e2e/team.js           # invitation d'équipe et suppression de compte dans un navigateur
 ```
 
 ## Déploiement

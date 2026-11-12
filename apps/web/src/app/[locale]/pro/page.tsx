@@ -28,7 +28,7 @@ export default function ProDashboard() {
       <PageTitle title={salon.name} subtitle={fmt.date(new Date(), locale)}
         action={<Badge tone={salon.published ? 'ok' : SALON_STATUS[salon.status][1]}>{salon.published ? t('Visible dans la marketplace') : t(SALON_STATUS[salon.status][0])}</Badge>} />
 
-      {!salon.published && (
+      {!salon.published && salon.isOwner && (
         <Card className="mb-6 p-5">
           <h2 className="flex items-center gap-2 font-semibold"><CircleAlert className="size-5 text-warn" aria-hidden />{t('Votre salon n’est pas encore visible par les clients')}</h2>
           {salon.reviewNote && <p className="mt-2 rounded-xl bg-info-soft px-3 py-2 text-sm text-info">{t('Message de notre équipe')} : {salon.reviewNote}</p>}

@@ -47,10 +47,10 @@ function ProShell({ children }: { children: React.ReactNode }) {
     { href: `${base}/queue`, label: t('File d’attente'), icon: Ticket },
     { href: `${base}/services`, label: t('Prestations'), icon: Scissors },
     { href: `${base}/team`, label: t('Équipe et horaires'), icon: UsersRound },
-    { href: `${base}/clients`, label: t('Clients'), icon: Users },
+    ...(salon.isOwner ? [{ href: `${base}/clients`, label: t('Clients'), icon: Users }] : []),
     { href: `${base}/reviews`, label: t('Avis'), icon: MessageSquare },
     { href: `${base}/loyalty`, label: t('Fidélité'), icon: Gift },
-    { href: `${base}/stats`, label: t('Statistiques'), icon: BarChart3 },
+    ...(salon.isOwner ? [{ href: `${base}/stats`, label: t('Statistiques'), icon: BarChart3 }] : []),
     { href: `${base}/salon`, label: t('Mon salon'), icon: Store },
     ...(salon.isOwner ? [{ href: `${base}/billing`, label: t('Abonnement'), icon: CreditCard }] : []),
   ];

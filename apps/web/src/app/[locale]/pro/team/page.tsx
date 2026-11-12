@@ -1,5 +1,5 @@
 'use client';
-import { CalendarOff, Clock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarOff, Clock, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Alert, Badge, Button, Card, Field, Input, Modal, PageTitle, Spinner, Toggle } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -92,7 +92,9 @@ export default function Team() {
   const [editing, setEditing] = useState<{ id?: string; displayName: string; title: string; active: boolean; serviceIds: string[] } | null>(null);
   const [hours, setHours] = useState<any>(null);
   const [off, setOff] = useState<any>(null);
+  const [inviting, setInviting] = useState<{ id: string; name: string; email: string } | null>(null);
   const action = useAction();
+  const invite = useAction();
   const refresh = async () => { await Promise.all([reload(), reloadSalon()]); };
   const activeCount = (data ?? []).filter((m) => m.active).length;
 
@@ -125,7 +127,21 @@ export default function Team() {
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => setHours(m)}><Clock className="size-4" />{t('Horaires')}</Button>
                 <Button variant="outline" size="sm" onClick={() => setOff(m)}><CalendarOff className="size-4" />{t('Absences')}{m.timeOffs.length ? ` (${m.timeOffs.length})` : ''}</Button>
+                {salon.isOwner && !m.isOwner && !m.user && (
+                  <Button variant="outline" size="sm" onClick={() => setInviting({ id: m.id, name: m.displayName, email: m.inviteEmail ?? '' })}><KeyRound className="size-4" />{m.inviteEmail ? t('Renvoyer l’invitation') : t('Inviter à se connecter')}</Button>
+                )}
               </div>
+              {!m.isOwner && (m.user || m.inviteEmail) && (
+                <p className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sand-deep px-3 py-2 text-sm">
+                  <span className="text-ink-soft">{m.user ? t('Compte de connexion : {email}', { email: m.user.email }) : t('Invitation envoyée à {email}', { email: m.inviteEmail })}</span>
+                  {salon.isOwner && (
+                    <button className="font-medium text-danger hover:underline" disabled={action.busy}
+                      onClick={() => confirm(m.user ? t('Retirer l’accès de ce membre ? Sa fiche et son historique sont conservés.') : t('Annuler cette invitation ?')) && action.run(async () => { await api(`/pro/staff/${m.id}/access`, { method: 'DELETE' }); await reload(); })}>
+                      {m.user ? t('Retirer l’accès') : t('Annuler l’invitation')}
+                    </button>
+                  )}
+                </p>
+              )}
             </Card>
           ))}
         </div>
@@ -156,6 +172,20 @@ export default function Team() {
               setEditing(null);
               await refresh();
             })}>{t('Enregistrer')}</Button>
+          </div>
+        )}
+      </Modal>
+      <Modal open={!!inviting} onClose={() => setInviting(null)} title={t('Inviter {name} à se connecter', { name: inviting?.name ?? '' })}>
+        {inviting && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted">{t('Le membre recevra un lien par email. Avec son propre compte, il gère le planning, la file d’attente et ses disponibilités. Les réglages du salon, l’équipe, l’abonnement et les statistiques restent réservés au propriétaire.')}</p>
+            <Field label={t('Adresse email')}><Input type="email" value={inviting.email} onChange={(e) => setInviting({ ...inviting, email: e.target.value })} dir="ltr" /></Field>
+            {invite.error && <Alert>{invite.error}</Alert>}
+            <Button className="w-full" busy={invite.busy} disabled={!/^\S+@\S+\.\S+$/.test(inviting.email)} onClick={() => invite.run(async () => {
+              await api(`/pro/staff/${inviting.id}/invite`, { body: { email: inviting.email.trim() } });
+              setInviting(null);
+              await reload();
+            })}>{t('Envoyer l’invitation')}</Button>
           </div>
         )}
       </Modal>

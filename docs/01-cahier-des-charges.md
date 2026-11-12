@@ -98,7 +98,7 @@ Elles sont toutes réversibles ; celles qui ne demandent qu'un réglage (sans d�
 | D-01 | Cohabitation rendez-vous / file d'attente | Hybride avec priorité au rendez-vous ; chaque salon peut désactiver l'un des deux modes | VALIDÉ |
 | D-01b | Débordement sur un rendez-vous | Refusé par défaut ; le professionnel peut forcer après confirmation explicite | PAR DÉFAUT |
 | D-02 | Un professionnel peut-il réserver comme client ? | Oui, dans les autres salons ; ni réservation ni avis dans le sien | VALIDÉ |
-| D-03 | Membres d'équipe | Fiches gérées par le propriétaire, rattachables plus tard à un compte (le modèle de données le prévoit) ; un salon par propriétaire | PAR DÉFAUT |
+| D-03 | Membres d'équipe | Fiches gérées par le propriétaire ; il peut inviter un membre à se connecter avec son propre compte (planning, file, ses disponibilités — réglages, équipe, abonnement et statistiques restent au propriétaire). Un salon par compte | PAR DÉFAUT |
 | D-04 | File à distance | Autorisée par défaut ; chaque salon peut la réserver aux clients sur place (QR Code obligatoire) — réglage | PAR DÉFAUT |
 | D-05 | Clients de passage | Le professionnel peut ajouter un client sans compte à la file et saisir un rendez-vous pour un client au téléphone | PAR DÉFAUT |
 | D-06 | Enchaînement professionnel | Demande → validation → création du salon → soumission → approbation ; abonnement payé en parallèle. Publication = salon approuvé **et** abonnement actif. Pas de période d'essai. L'abonnement démarre à la validation du paiement | PAR DÉFAUT |
@@ -128,9 +128,9 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | Validation administrative des salons | ✅ | |
 | Marketplace : recherche, filtres, carte, classement configurable | ✅ | Filtre « disponibilité » = ouvert maintenant |
 | Réservation classique | ✅ | Double réservation impossible (contrainte en base, testée avec 20 demandes simultanées) |
-| Réservation de groupe | ✅ | Web ; l'application mobile réserve pour une personne |
+| Réservation de groupe | ✅ | Web et mobile |
 | Retards, absences, réintégration, historique des statuts | ✅ | |
-| File d'attente : QR Code, ticket, position, estimation, « peu importe », temps réel | ✅ | |
+| File d'attente : QR Code, ticket, position, estimation, « peu importe », temps réel | ✅ | Flux temps réel vérifié à travers le site |
 | Estimation fondée sur les durées réelles | ✅ | Interface prête pour un modèle prédictif |
 | Fidélité | ✅ | |
 | Avis | ✅ | |
@@ -146,10 +146,10 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | Application mobile Android / iOS | 🟡 | Code compilé et paquets Android / iOS construits ; non exécutée sur appareil ou émulateur |
 | Stockage S3 | 🟡 | Pilote développé, non testé ; le stockage local est testé |
 | Déploiement Docker, CI | 🟡 | Fichiers fournis ; images Docker non construites dans l'environnement de développement |
-| Comptes membres d'équipe avec connexion propre | ⬜ | Prévu par le modèle de données |
+| Comptes membres d'équipe avec connexion propre | ✅ | Invitation par email, droits limités, retrait d'accès ; testé (API et navigateur) |
+| Export des données et suppression de compte en libre-service | ✅ | Web et mobile ; le propriétaire d'un salon doit passer par le support |
 | Multi-salons | ⬜ | |
 | SMS, WhatsApp, paiement en ligne | ⬜ | Reportés (cahier des charges) |
-| Suppression de compte en libre-service | ⬜ | À prévoir pour la conformité |
 | Connexion Apple | ⬜ | Voir D-17 |
 
 ## 7. Risques restants
@@ -173,3 +173,4 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | 2026-11-11 | Le rôle professionnel inclut les capacités client. | D-02 |
 | 2026-11-11 | Demande du porteur du projet : développer sans autre question. Décisions D-03 à D-18 prises par défaut. | D-03 à D-18 |
 | 2026-11-12 | Première version développée : API, site Web, application mobile, déploiement. | Section 6 |
+| 2026-11-12 | Ajout des comptes de connexion pour les membres d'équipe, de l'export et de la suppression de compte, et de la réservation de groupe sur mobile. | D-03, section 6 |

@@ -210,7 +210,19 @@ function Profile() {
   const [form, setForm] = useState({ firstName: user!.firstName, lastName: user!.lastName, phone: user!.phone ?? '' });
   const [pwd, setPwd] = useState({ currentPassword: '', newPassword: '' });
   const [saved, setSaved] = useState<string | null>(null);
-  const profile = useAction(), password = useAction(), verify = useAction();
+  const profile = useAction(), password = useAction(), verify = useAction(), removal = useAction();
+  const { signOut } = useAuth();
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const exportData = async () => {
+    const blob = new Blob([JSON.stringify(await api('/me/export'), null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'mes-donnees.json';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
   const prefs = user!.notifPrefs ?? {};
   const setPref = async (key: 'push' | 'email', value: boolean) => { await api('/me', { method: 'PATCH', body: { notifPrefs: { [key]: value } } }); await reload(); };
 
@@ -249,6 +261,23 @@ function Profile() {
           <Button variant="outline" busy={password.busy} disabled={pwd.newPassword.length < 8}
             onClick={() => password.run(async () => { await api('/me/password', { body: { newPassword: pwd.newPassword, currentPassword: pwd.currentPassword || undefined } }); setPwd({ currentPassword: '', newPassword: '' }); await reload(); setSaved(t('Mot de passe modifié.')); })}>{t('Changer le mot de passe')}</Button>
         </Card>
+        <Card className="space-y-3 p-5">
+          <h2 className="text-lg font-semibold">{t('Mes données')}</h2>
+          <p className="text-sm text-muted">{t('Vous pouvez obtenir une copie de vos données ou supprimer définitivement votre compte.')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={exportData}>{t('Télécharger mes données')}</Button>
+            <Button variant="ghost" size="sm" className="text-danger" onClick={() => setDeleting(true)}>{t('Supprimer mon compte')}</Button>
+          </div>
+        </Card>
+        <Modal open={deleting} onClose={() => setDeleting(false)} title={t('Supprimer mon compte')}>
+          <div className="space-y-4">
+            <Alert tone="warn">{t('Cette action est définitive : vos rendez-vous à venir et vos tickets seront annulés, vos points de fidélité perdus.')}</Alert>
+            {user!.hasPassword && <Field label={t('Mot de passe')}><Input type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} dir="ltr" /></Field>}
+            {removal.error && <Alert>{removal.error}</Alert>}
+            <Button variant="danger" className="w-full" busy={removal.busy} disabled={user!.hasPassword && !confirmPwd}
+              onClick={() => removal.run(async () => { await api('/me/delete', { body: { password: confirmPwd || undefined } }); await signOut(); router.push(`/${locale}`); })}>{t('Supprimer définitivement')}</Button>
+          </div>
+        </Modal>
         {user!.role === 'CLIENT' && (
           <Card className="flex items-center justify-between gap-4 p-5">
             <p className="text-sm text-ink-soft">{t('Vous êtes coiffeur ou barbier ?')}</p>

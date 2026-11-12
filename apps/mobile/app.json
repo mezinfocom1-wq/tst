@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Salonat",
+    "slug": "salonat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ma.salonat.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "ma.salonat.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "L'appareil photo sert à scanner le QR Code d'un salon pour rejoindre sa file d'attente."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "scheme": "salonat",
+    "extra": {
+      "supportsRTL": true
+    },
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

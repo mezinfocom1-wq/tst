@@ -527,4 +527,10 @@ export const AR: Record<string, string> = {
   "Reçu de paiement": "وصل الأداء",
   "Référence du virement": "مرجع التحويل",
   "Montant réglé": "المبلغ المؤدى",
+  // ─── Application mobile ───
+  "Autoriser l’appareil photo": "السماح باستعمال الكاميرا",
+  "Autorisez l’appareil photo pour scanner le QR Code affiché dans le salon.": "اسمح باستعمال الكاميرا لمسح رمز QR المعروض في الصالون.",
+  "Créez votre salon depuis le site Web pour commencer.": "أنشئ صالونك من الموقع الإلكتروني للبدء.",
+  "La gestion complète (prestations, équipe, horaires, abonnement, statistiques) se fait depuis le site Web.": "التدبير الكامل (الخدمات، الفريق، أوقات العمل، الاشتراك، الإحصائيات) يتم من الموقع الإلكتروني.",
+  "Redémarrez l’application pour appliquer le sens d’affichage de la langue.": "أعد تشغيل التطبيق لتطبيق اتجاه عرض اللغة.",
 };

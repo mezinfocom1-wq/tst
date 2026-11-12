@@ -35,8 +35,8 @@ export class ProInsightsController {
     };
   }
 
-  /** Fichier clients du salon : uniquement les personnes ayant un historique dans CE salon. */
-  @ProSalon() @Get('clients')
+  /** Fichier clients du salon : uniquement les personnes ayant un historique dans CE salon. Réservé au propriétaire. */
+  @ProSalon({ ownerOnly: true }) @Get('clients')
   async clients(@CurrentSalon() salon: Salon) {
     const rows = await this.prisma.$queryRaw<{ clientId: string; visits: bigint; spent: bigint; lastVisit: Date }[]>`
       SELECT "clientId", COUNT(*) AS visits, COALESCE(SUM("priceMad"), 0) AS spent, MAX(at) AS "lastVisit" FROM (
@@ -61,8 +61,8 @@ export class ProInsightsController {
     });
   }
 
-  /** Statistiques sur une période. Le détail avancé dépend de l'abonnement. */
-  @ProSalon() @Get('stats')
+  /** Statistiques sur une période. Réservées au propriétaire ; le détail avancé dépend de l'abonnement. */
+  @ProSalon({ ownerOnly: true }) @Get('stats')
   async stats(@CurrentSalon() salon: Salon, @Query('days') daysRaw?: string) {
     const features = await this.entitlements.require(salon.id, 'statistics');
     const days = Math.min(Math.max(Number(daysRaw) || 30, 7), 365);

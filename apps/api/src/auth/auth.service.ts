@@ -214,4 +214,70 @@ export class AuthService {
     });
     await this.audit.log({ actorId: userId, action: 'auth.password_changed' });
   }
+
+  /** Export des données personnelles (droit d'accès, loi 09-08). */
+  async exportData(userId: string) {
+    const [user, appointments, tickets, loyalty, reviews, complaints, application] = await Promise.all([
+      this.prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+      this.prisma.appointment.findMany({
+        where: { clientId: userId }, orderBy: { startAt: 'desc' },
+        select: { startAt: true, endAt: true, status: true, priceMad: true, personName: true, salon: { select: { name: true } }, service: { select: { name: true } } },
+      }),
+      this.prisma.queueTicket.findMany({
+        where: { clientId: userId }, orderBy: { joinedAt: 'desc' },
+        select: { day: true, number: true, status: true, joinedAt: true, priceMad: true, salon: { select: { name: true } }, service: { select: { name: true } } },
+      }),
+      this.prisma.loyaltyTransaction.findMany({ where: { clientId: userId }, orderBy: { createdAt: 'desc' }, select: { salonId: true, points: true, reason: true, createdAt: true } }),
+      this.prisma.review.findMany({ where: { clientId: userId }, select: { rating: true, comment: true, createdAt: true, salon: { select: { name: true } } } }),
+      this.prisma.complaint.findMany({ where: { authorId: userId }, select: { subject: true, message: true, status: true, adminReply: true, createdAt: true } }),
+      this.prisma.proApplication.findUnique({ where: { userId }, select: { businessName: true, city: true, phone: true, profession: true, status: true, createdAt: true } }),
+    ]);
+    return {
+      exportedAt: new Date().toISOString(),
+      account: { ...publicUser(user), createdAt: user.createdAt },
+      appointments, queueTickets: tickets, loyaltyTransactions: loyalty, reviews, complaints, proApplication: application,
+    };
+  }
+
+  /**
+   * Suppression du compte à la demande de l'utilisateur.
+   * Les données d'identité sont effacées ; l'historique comptable des salons (prestations réalisées) est conservé sous forme anonyme.
+   */
+  async deleteAccount(userId: string, password?: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (user.role === 'SUPER_ADMIN') throw badRequest('ADMIN_ACCOUNT', 'Un compte administrateur ne peut pas être supprimé ici');
+    if (user.passwordHash && !(password && (await argon2.verify(user.passwordHash, password)))) {
+      throw badRequest('WRONG_PASSWORD', 'Mot de passe incorrect');
+    }
+    if (await this.prisma.salon.count({ where: { ownerId: userId } })) {
+      throw conflict('OWNER_HAS_SALON', 'Votre compte est propriétaire d’un salon : contactez le support pour le clôturer');
+    }
+    const now = new Date();
+    const future = await this.prisma.appointment.findMany({
+      where: { clientId: userId, status: { in: ['CONFIRMED', 'CHECKED_IN'] }, startAt: { gt: now } }, select: { id: true, salonId: true, status: true },
+    });
+    await this.prisma.$transaction([
+      this.prisma.appointment.updateMany({ where: { id: { in: future.map((a) => a.id) } }, data: { status: 'CANCELLED' } }),
+      this.prisma.statusEvent.createMany({
+        data: future.map((a) => ({ salonId: a.salonId, entityType: 'APPOINTMENT', entityId: a.id, fromStatus: a.status, toStatus: 'CANCELLED', actorId: userId, note: 'Compte supprimé' })),
+      }),
+      this.prisma.queueTicket.updateMany({ where: { clientId: userId, status: { in: ['WAITING', 'CALLED'] } }, data: { status: 'CANCELLED' } }),
+      this.prisma.staffMember.updateMany({ where: { userId }, data: { userId: null } }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.prisma.emailToken.deleteMany({ where: { userId } }),
+      this.prisma.deviceToken.deleteMany({ where: { userId } }),
+      this.prisma.notification.deleteMany({ where: { userId } }),
+      this.prisma.proApplication.deleteMany({ where: { userId } }),
+      this.prisma.complaint.deleteMany({ where: { authorId: userId } }),
+      this.prisma.review.updateMany({ where: { clientId: userId }, data: { comment: null } }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: `supprime-${userId}@invalid.local`, passwordHash: null, googleId: null, firstName: 'Compte', lastName: 'supprimé',
+          phone: null, status: 'SUSPENDED', role: 'CLIENT', emailVerifiedAt: null, notifPrefs: {},
+        },
+      }),
+    ]);
+    await this.audit.log({ actorId: userId, action: 'user.deleted' });
+  }
 }

@@ -64,3 +64,7 @@ export class ProApplicationDto {
   @IsIn(['BARBER', 'HAIRDRESSER', 'STYLIST']) profession: string;
   @IsOptional() @IsString() @MaxLength(1000) message?: string;
 }
+
+export class DeleteAccountDto {
+  @IsOptional() @IsString() @MaxLength(128) password?: string;
+}

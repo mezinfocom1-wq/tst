@@ -24,6 +24,7 @@ import { ReviewsController } from './reviews/reviews.controller';
 import { ProInsightsController } from './salons/pro-insights.controller';
 import { ProSalonController } from './salons/pro-salon.controller';
 import { SalonsController } from './salons/salons.controller';
+import { TeamController } from './salons/team.controller';
 import { SalonsService } from './salons/salons.service';
 import { SchedulingService } from './scheduling/scheduling.service';
 
@@ -35,7 +36,7 @@ import { SchedulingService } from './scheduling/scheduling.service';
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: process.env.NODE_ENV === 'test' ? 100_000 : 300 }]),
   ],
   controllers: [
-    HealthController, AuthController, NotificationsController, SalonsController, ProSalonController, ProInsightsController,
+    HealthController, AuthController, NotificationsController, SalonsController, ProSalonController, ProInsightsController, TeamController,
     BookingController, QueueController, LoyaltyController, ReviewsController, BillingController, AdminController, ComplaintsController,
   ],
   providers: [

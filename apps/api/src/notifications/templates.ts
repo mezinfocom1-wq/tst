@@ -104,6 +104,11 @@ export const TEMPLATES = {
     fr: { title: 'Abonnement expiré', body: 'Votre abonnement {{plan}} a expiré. Votre salon n\'est plus visible dans la marketplace.' },
     ar: { title: 'انتهى الاشتراك', body: 'انتهى اشتراكك {{plan}}. لم يعد صالونك ظاهرا.' },
   },
+  team_invite: {
+    channels: email, mandatory: true,
+    fr: { title: 'Invitation à rejoindre {{salon}}', body: 'Bonjour {{name}},\n\n{{owner}} vous invite à gérer votre planning et la file d\'attente du salon {{salon}}.\n\nAcceptez l\'invitation avec ce lien (valable 7 jours) :\n{{link}}\n\nConnectez-vous ou créez un compte avec cette adresse email.' },
+    ar: { title: 'دعوة للانضمام إلى {{salon}}', body: 'مرحبا {{name}}،\n\nيدعوك {{owner}} لتدبير جدولك وطابور الانتظار في صالون {{salon}}.\n\nاقبل الدعوة عبر هذا الرابط (صالح لمدة 7 أيام):\n{{link}}\n\nسجّل الدخول أو أنشئ حسابا بهذا البريد الإلكتروني.' },
+  },
   admin_action_required: {
     channels: email,
     fr: { title: 'Action requise : {{what}}', body: 'Un élément attend votre validation : {{what}} ({{detail}}).' },

@@ -93,6 +93,24 @@ export class NotificationsService {
     }
   }
 
+  /**
+   * Envoie un email à une adresse qui n'a pas forcément de compte (invitation d'équipe).
+   * Si un compte existe déjà, l'envoi passe par `notify` pour figurer dans son historique.
+   */
+  async emailTo(address: string, key: TemplateKey, vars: Record<string, unknown>, locale: 'fr' | 'ar' = 'fr') {
+    const user = await this.prisma.user.findUnique({ where: { email: address } });
+    if (user) return this.notify(user.id, key, vars);
+    try {
+      const override = await this.prisma.notificationTemplate.findUnique({ where: { key_locale: { key, locale } } });
+      const text = override ?? (TEMPLATES[key] as Template)[locale];
+      const title = render(text.title, vars), body = render(text.body, vars);
+      if (this.mailer) await this.mailer.sendMail({ from: config.smtp.from, to: address, subject: title, text: body });
+      else this.log.log(`[email non envoyé : SMTP non configuré] à ${address} — ${title}\n${body}`);
+    } catch (e) {
+      this.log.error(`emailTo(${key}) : ${(e as Error).message}`);
+    }
+  }
+
   /** Prévient tous les Super Admins (nouvelle demande, paiement à vérifier…). */
   async notifyAdmins(what: string, detail: string) {
     const admins = await this.prisma.user.findMany({ where: { role: 'SUPER_ADMIN', status: 'ACTIVE' }, select: { id: true } });

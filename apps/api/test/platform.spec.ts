@@ -545,3 +545,98 @@ describe('fichiers', () => {
     await ctx.http().get(`/api/admin/payments/${paymentId}/proof`).set(auth(admin)).expect(200);
   });
 });
+
+describe("comptes d'équipe", () => {
+  it('invite un membre, limite ses droits à son rôle, puis retire son accès', async () => {
+    const { salon, service, pro, owner } = await newPublishedSalon(ctx, admin);
+    const member = (await ctx.http().post('/api/pro/staff').set(auth(pro)).send({ displayName: 'Youssef' }).expect(201)).body;
+    const invited = await newUser(ctx), stranger = await newUser(ctx);
+
+    // Le propriétaire n'a pas de compte à inviter pour lui-même ; une invitation part pour le membre.
+    await ctx.http().post(`/api/pro/staff/${owner.id}/invite`).set(auth(pro)).send({ email: invited.email }).expect(409);
+    await ctx.http().post(`/api/pro/staff/${member.id}/invite`).set(auth(pro)).send({ email: invited.email }).expect(200);
+    const mail = await ctx.prisma.notification.findFirstOrThrow({ where: { userId: invited.id, type: 'team_invite' } });
+    const token = /token=([\w-]+)/.exec(mail.body)![1];
+    expect((await ctx.http().get(`/api/team-invites/${token}`).expect(200)).body).toMatchObject({ displayName: 'Youssef', email: invited.email });
+    const staffList = (await ctx.http().get('/api/pro/staff').set(auth(pro))).body;
+    expect(JSON.stringify(staffList)).not.toContain('inviteTokenHash');
+
+    // L'invitation est nominative.
+    expect((await ctx.http().post('/api/team-invites/accept').set(auth(stranger)).send({ token }).expect(403)).body.code).toBe('WRONG_ACCOUNT');
+    await ctx.http().get('/api/pro/queue').set(auth(invited)).expect(403);
+    await ctx.http().post('/api/team-invites/accept').set(auth(invited)).send({ token }).expect(200);
+    await ctx.http().post('/api/team-invites/accept').set(auth(invited)).send({ token }).expect(400);
+    expect((await ctx.http().get('/api/me').set(auth(invited))).body.role).toBe('PROFESSIONAL');
+
+    // Le membre travaille : planning, file, ses propres horaires.
+    expect((await ctx.http().get('/api/pro/salon').set(auth(invited)).expect(200)).body).toMatchObject({ id: salon.id, isOwner: false });
+    await ctx.http().get('/api/pro/appointments').set(auth(invited)).expect(200);
+    await ctx.http().post('/api/pro/queue').set(auth(invited)).send({ guestName: 'Passage', serviceId: service.id }).expect(201);
+    const hours = { hours: [{ weekday: 1, startMin: 540, endMin: 1020 }] };
+    await ctx.http().put(`/api/pro/staff/${member.id}/hours`).set(auth(invited)).send(hours).expect(200);
+
+    // …mais ne touche ni aux horaires des autres, ni aux réglages, ni à l'argent.
+    await ctx.http().put(`/api/pro/staff/${owner.id}/hours`).set(auth(invited)).send(hours).expect(403);
+    await ctx.http().patch('/api/pro/salon').set(auth(invited)).send({ name: 'Renommé' }).expect(403);
+    await ctx.http().post('/api/pro/services').set(auth(invited)).send({ name: 'Pirate', durationMin: 10, priceMad: 1 }).expect(403);
+    await ctx.http().post('/api/pro/staff').set(auth(invited)).send({ displayName: 'Complice' }).expect(403);
+    await ctx.http().get('/api/pro/billing').set(auth(invited)).expect(403);
+    await ctx.http().get('/api/pro/stats').set(auth(invited)).expect(403);
+    await ctx.http().get('/api/pro/clients').set(auth(invited)).expect(403);
+    await ctx.http().delete(`/api/pro/staff/${member.id}/access`).set(auth(invited)).expect(403);
+    // Un compte ne peut appartenir qu'à un seul salon.
+    const other = await newPublishedSalon(ctx, admin);
+    const otherMember = (await ctx.http().post('/api/pro/staff').set(auth(other.pro)).send({ displayName: 'Double' }).expect(201)).body;
+    await ctx.http().post(`/api/pro/staff/${otherMember.id}/invite`).set(auth(other.pro)).send({ email: invited.email }).expect(409);
+
+    // Retrait de l'accès : effet immédiat, retour au rôle client, fiche conservée.
+    await ctx.http().delete(`/api/pro/staff/${member.id}/access`).set(auth(pro)).expect(200);
+    await ctx.http().get('/api/pro/queue').set(auth(invited)).expect(403);
+    expect((await ctx.http().get('/api/me').set(auth(invited))).body.role).toBe('CLIENT');
+    expect(await ctx.prisma.staffMember.count({ where: { id: member.id, userId: null } })).toBe(1);
+  });
+
+  it("refuse les comptes d'équipe quand la formule ne prévoit qu'un professionnel", async () => {
+    const { pro } = await newPublishedSalon(ctx, admin, 'STARTER');
+    await ctx.http().post('/api/pro/staff').set(auth(pro)).send({ displayName: 'Deuxième' }).expect(403);
+  });
+});
+
+describe('données personnelles', () => {
+  it('exporte les données du compte, sans secret', async () => {
+    const { salon, service } = await newPublishedSalon(ctx, admin);
+    const client = await newUser(ctx);
+    const [slot] = await firstSlot(ctx, salon.id, [{ serviceId: service.id }]);
+    await ctx.http().post(`/api/salons/${salon.id}/bookings`).set(auth(client)).send({ items: [{ serviceId: service.id }], startAt: slot.startAt }).expect(201);
+    const data = (await ctx.http().get('/api/me/export').set(auth(client)).expect(200)).body;
+    expect(data.account.email).toBe(client.email);
+    expect(data.appointments).toHaveLength(1);
+    expect(JSON.stringify(data)).not.toMatch(/passwordHash|tokenHash/);
+  });
+
+  it('supprime un compte : identité effacée, réservations futures annulées, connexion impossible', async () => {
+    const { salon, service, pro } = await newPublishedSalon(ctx, admin);
+    const client = await newUser(ctx);
+    const [slot] = await firstSlot(ctx, salon.id, [{ serviceId: service.id }]);
+    const booking = (await ctx.http().post(`/api/salons/${salon.id}/bookings`).set(auth(client)).send({ items: [{ serviceId: service.id }], startAt: slot.startAt }).expect(201)).body;
+    await ctx.http().post(`/api/salons/${salon.id}/queue/join`).set(auth(client)).send({ serviceId: service.id }).expect(201);
+
+    await ctx.http().post('/api/me/delete').set(auth(client)).send({ password: 'mauvais' }).expect(400);
+    await ctx.http().post('/api/me/delete').set(auth(client)).send({ password: PASSWORD }).expect(200);
+
+    await ctx.http().get('/api/me').set(auth(client)).expect(403);
+    await ctx.http().post('/api/auth/login').send({ email: client.email, password: PASSWORD }).expect(401);
+    await ctx.http().post('/api/auth/refresh').send({ refreshToken: client.refreshToken }).expect(401);
+    const row = await ctx.prisma.user.findUniqueOrThrow({ where: { id: client.id } });
+    expect(row).toMatchObject({ firstName: 'Compte', phone: null, passwordHash: null });
+    expect(row.email).not.toBe(client.email);
+    expect((await ctx.prisma.appointment.findUniqueOrThrow({ where: { id: booking.appointments[0].id } })).status).toBe('CANCELLED');
+    expect((await ctx.http().get('/api/pro/queue').set(auth(pro))).body.waiting).toHaveLength(0);
+    // Le créneau est libéré et l'adresse email peut resservir.
+    expect((await firstSlot(ctx, salon.id, [{ serviceId: service.id }])).map((s) => s.startAt)).toContain(slot.startAt);
+    await ctx.http().post('/api/auth/register').send({ email: client.email, password: PASSWORD, firstName: 'Nouveau', lastName: 'Compte' }).expect(201);
+
+    // Le propriétaire d'un salon doit passer par le support.
+    expect((await ctx.http().post('/api/me/delete').set(auth(pro)).send({ password: PASSWORD }).expect(409)).body.code).toBe('OWNER_HAS_SALON');
+  });
+});

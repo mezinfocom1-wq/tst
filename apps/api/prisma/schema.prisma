@@ -194,6 +194,10 @@ model StaffMember {
   photoUrl    String?
   isOwner     Boolean  @default(false)
   active      Boolean  @default(true)
+  /// Invitation à se connecter envoyée par le propriétaire (jeton stocké haché, à usage unique).
+  inviteEmail     String?
+  inviteTokenHash String?   @unique
+  inviteExpiresAt DateTime?
   createdAt   DateTime @default(now())
 
   salon        Salon          @relation(fields: [salonId], references: [id], onDelete: Cascade)

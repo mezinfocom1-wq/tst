@@ -8,7 +8,7 @@ import { conflict, forbidden } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
-  ChangePasswordDto, ForgotDto, GoogleDto, LoginDto, ProApplicationDto, RefreshDto, RegisterDto, ResetDto, TokenDto, UpdateMeDto,
+  ChangePasswordDto, DeleteAccountDto, ForgotDto, GoogleDto, LoginDto, ProApplicationDto, RefreshDto, RegisterDto, ResetDto, TokenDto, UpdateMeDto,
 } from './auth.dto';
 import { AuthService, publicUser } from './auth.service';
 
@@ -113,6 +113,18 @@ export class AuthController {
   @ApiBearerAuth() @HttpCode(200) @Post('me/password')
   async changePassword(@CurrentUser() u: AuthUser, @Body() dto: ChangePasswordDto) {
     await this.auth.changePassword(u.id, dto);
+    return { ok: true };
+  }
+
+  @ApiBearerAuth() @Get('me/export')
+  exportData(@CurrentUser() u: AuthUser) {
+    return this.auth.exportData(u.id);
+  }
+
+  @ApiBearerAuth() @Throttle(strict) @HttpCode(200) @Post('me/delete')
+  async deleteAccount(@CurrentUser() u: AuthUser, @Body() dto: DeleteAccountDto, @Res({ passthrough: true }) res: Response) {
+    await this.auth.deleteAccount(u.id, dto.password);
+    res.clearCookie(COOKIE, { path: '/api/auth' });
     return { ok: true };
   }
 

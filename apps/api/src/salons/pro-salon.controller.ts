@@ -177,7 +177,9 @@ export class ProSalonController {
   staff(@CurrentSalon() salon: Salon) {
     return this.prisma.staffMember.findMany({
       where: { salonId: salon.id }, orderBy: [{ isOwner: 'desc' }, { createdAt: 'asc' }],
+      omit: { inviteTokenHash: true },
       include: {
+        user: { select: { id: true, email: true } },
         services: { select: { serviceId: true } },
         workingHours: { orderBy: [{ weekday: 'asc' }, { startMin: 'asc' }] },
         timeOffs: { where: { endAt: { gt: new Date() } }, orderBy: { startAt: 'asc' } },

@@ -129,6 +129,7 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | Marketplace : recherche, filtres, carte, classement configurable | ✅ | Filtre « disponibilité » = ouvert maintenant |
 | Réservation classique | ✅ | Double réservation impossible (contrainte en base, testée avec 20 demandes simultanées) |
 | Réservation de groupe | ✅ | Web et mobile |
+| Déplacement d'un rendez-vous (client et professionnel) avec notification | ✅ | Web ; non proposé dans l'application mobile |
 | Retards, absences, réintégration, historique des statuts | ✅ | |
 | File d'attente : QR Code, ticket, position, estimation, « peu importe », temps réel | ✅ | Flux temps réel vérifié à travers le site |
 | Estimation fondée sur les durées réelles | ✅ | Interface prête pour un modèle prédictif |
@@ -141,7 +142,7 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | Back-office Super Admin | ✅ | Interface en français uniquement |
 | Journal d'activité | ✅ | |
 | Réclamations | ✅ | |
-| Français / arabe (RTL), DH, fuseau du Maroc | ✅ | Web et mobile ; back-office en français |
+| Français / arabe (RTL), DH, fuseau du Maroc | ✅ | Web et mobile ; back-office en français. L'heure du Maroc est fournie par le serveur : un appareil dont la base de fuseaux est périmée affiche quand même la bonne heure |
 | Site Web responsive | ✅ | Parcours vérifiés dans un navigateur réel |
 | Application mobile Android / iOS | 🟡 | Code compilé et paquets Android / iOS construits ; non exécutée sur appareil ou émulateur |
 | Stockage S3 | 🟡 | Pilote développé, non testé ; le stockage local est testé |
@@ -174,3 +175,4 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | 2026-11-11 | Demande du porteur du projet : développer sans autre question. Décisions D-03 à D-18 prises par défaut. | D-03 à D-18 |
 | 2026-11-12 | Première version développée : API, site Web, application mobile, déploiement. | Section 6 |
 | 2026-11-12 | Ajout des comptes de connexion pour les membres d'équipe, de l'export et de la suppression de compte, et de la réservation de groupe sur mobile. | D-03, section 6 |
+| 2026-11-12 | Ajout du déplacement de rendez-vous. Le serveur devient la référence de l'heure du Maroc pour le Web et le mobile, après constat d'un écart d'une heure entre le serveur (base de fuseaux 2026) et un navigateur non à jour. | Section 6 |

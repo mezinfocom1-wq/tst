@@ -104,7 +104,8 @@ Le retrait d'accès est immédiat : les droits sont relus en base à chaque requ
 
 - Le texte français sert de clé ; `apps/web/src/lib/ar.ts` est le dictionnaire arabe unique, copié vers le mobile par `node scripts/sync-i18n.mjs`.
 - `node scripts/extract-i18n.mjs --missing` liste les textes non traduits.
-- Dates stockées en UTC, affichées et calculées en `Africa/Casablanca`.
+- Dates stockées en UTC, calculées côté serveur en `Africa/Casablanca`.
+- **Le serveur est la référence de l'heure du Maroc.** Les règles de ce fuseau changent (Ramadan, décisions officielles) et un téléphone ou un navigateur non à jour afficherait un rendez-vous avec une heure d'écart — constaté pendant les tests. L'API publie la table des décalages (`GET /api/meta/timezone`) ; le Web et le mobile affichent et saisissent les heures d'après cette table (`zone.ts`), la base de fuseaux de l'appareil ne servant que de secours avant son chargement. En production, garder à jour le paquet `tzdata` et la version de Node.js du serveur.
 - Ajouter une langue : un dictionnaire de plus et son code dans `LOCALES`.
 
 ## 9. Écarts par rapport à la proposition initiale

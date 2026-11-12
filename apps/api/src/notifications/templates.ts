@@ -34,6 +34,11 @@ export const TEMPLATES = {
     fr: { title: 'Rendez-vous annulé', body: 'Le rendez-vous chez {{salon}} du {{when}} a été annulé.' },
     ar: { title: 'تم إلغاء الموعد', body: 'تم إلغاء الموعد في {{salon}} بتاريخ {{when}}.' },
   },
+  booking_rescheduled: {
+    channels: both,
+    fr: { title: 'Rendez-vous déplacé', body: 'Le rendez-vous chez {{salon}} est déplacé : {{when}} (au lieu de {{before}}).' },
+    ar: { title: 'تم تغيير الموعد', body: 'تم تغيير الموعد في {{salon}}: {{when}} (بدل {{before}}).' },
+  },
   booking_reminder: {
     channels: both,
     fr: { title: 'Rappel de rendez-vous', body: 'Rappel : rendez-vous chez {{salon}} {{when}}.' },

@@ -196,6 +196,61 @@ export class BookingService {
     return { ok: true };
   }
 
+  /**
+   * Déplace un rendez-vous confirmé vers un autre horaire (et, côté professionnel, vers un autre membre de l'équipe).
+   * Le nouveau créneau est vérifié comme une réservation ; l'ancien n'est libéré que si le déplacement réussit.
+   */
+  async reschedule(salon: Salon, appointmentId: string, startAt: string, by: { actorId: string; clientId?: string; staffId?: string }) {
+    const appt = await this.prisma.appointment.findFirst({
+      where: { id: appointmentId, salonId: salon.id, ...(by.clientId ? { clientId: by.clientId } : {}) }, include: { service: true },
+    });
+    if (!appt) throw notFound('Rendez-vous');
+    if (appt.status !== 'CONFIRMED') throw conflict('BAD_STATUS', 'Seul un rendez-vous confirmé peut être déplacé');
+    const start = new Date(startAt).getTime();
+    if (!Number.isFinite(start)) throw badRequest('BAD_DATE', 'Date invalide');
+    const now = Date.now();
+    if (by.clientId) {
+      if (appt.startAt.getTime() - now < salon.cancelMinHours * 3_600_000) {
+        throw badRequest('TOO_LATE_TO_CANCEL', `La modification n'est plus possible moins de ${salon.cancelMinHours} h avant le rendez-vous`);
+      }
+      if (start < now + salon.bookingLeadMin * 60_000 - 60_000) throw badRequest('TOO_SOON', `Choisissez un horaire au moins ${salon.bookingLeadMin} minutes à l'avance`);
+    } else if (start < now - 5 * 60_000) {
+      throw badRequest('IN_THE_PAST', 'Ce créneau est déjà passé');
+    }
+    const days = await this.scheduling.loadDay(salon.id, localDay(start), now, appt.id);
+    // Le client garde son professionnel ; le salon peut en choisir un autre.
+    const planned = this.scheduling.plan(days, [{ service: appt.service, staffId: by.staffId ?? appt.staffId }], start, 'CONSECUTIVE');
+    if (!planned) throw conflict('SLOT_UNAVAILABLE', "Ce créneau n'est pas disponible");
+    const target = planned[0];
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        for (const staffId of [...new Set([appt.staffId, target.staffId])].sort()) {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`staff:${staffId}`}))`;
+        }
+        const { count } = await tx.appointment.updateMany({
+          where: { id: appt.id, status: 'CONFIRMED' },
+          data: { startAt: new Date(target.start), endAt: new Date(target.end), staffId: target.staffId, reminderSentAt: null },
+        });
+        if (!count) throw conflict('BAD_STATUS', 'Le rendez-vous a changé entre-temps');
+        await tx.statusEvent.create({
+          data: {
+            salonId: salon.id, entityType: 'APPOINTMENT', entityId: appt.id, fromStatus: 'CONFIRMED', toStatus: 'CONFIRMED', actorId: by.actorId,
+            note: `Déplacé du ${appt.startAt.toISOString()} au ${new Date(target.start).toISOString()}`,
+          },
+        });
+      });
+    } catch (e) {
+      if (isOverlapError(e)) throw conflict('SLOT_TAKEN', "Ce créneau vient d'être pris");
+      throw e;
+    }
+    const vars = { salon: salon.name, when: formatLocal(new Date(target.start)), before: formatLocal(appt.startAt) };
+    // On prévient l'autre partie : le client si le salon déplace, le salon si le client déplace.
+    const recipient = by.clientId ? salon.ownerId : appt.clientId;
+    if (recipient) await this.notifications.notify(recipient, 'booking_rescheduled', vars, { appointmentId: appt.id });
+    await this.queue.afterChange(salon);
+    return this.prisma.appointment.findUnique({ where: { id: appt.id }, include: { service: { select: { name: true } }, staff: { select: { displayName: true } } } });
+  }
+
   // ─── Espace professionnel ───
 
   async listForSalon(salonId: string, from: Date, to: Date) {

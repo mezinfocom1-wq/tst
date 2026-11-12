@@ -6,7 +6,7 @@ import {
   ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsISO8601, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength, ValidateNested,
 } from 'class-validator';
 import { AuthUser, CurrentSalon, CurrentUser, ProSalon } from '../common/auth';
-import { badRequest } from '../common/errors';
+import { badRequest, notFound } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { dayBounds, isValidDay, localDay } from '../common/tz';
 import { BookingService } from './booking.service';
@@ -28,6 +28,13 @@ class CreateBookingDto {
 class ProBookingDto extends CreateBookingDto {
   @IsString() @MinLength(1) @MaxLength(60) guestName: string;
   @IsOptional() @Matches(/^(\+212|0)[5-7]\d{8}$/, { message: 'Numéro de téléphone marocain invalide' }) guestPhone?: string;
+}
+
+class RescheduleDto {
+  @IsISO8601() startAt: string;
+}
+class ProRescheduleDto extends RescheduleDto {
+  @IsOptional() @IsUUID() staffId?: string;
 }
 
 class StatusDto {
@@ -54,6 +61,13 @@ export class BookingController {
     return this.bookings.cancelByClient(u.id, id);
   }
 
+  @HttpCode(200) @Post('appointments/:id/reschedule')
+  async reschedule(@CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RescheduleDto) {
+    const appt = await this.prisma.appointment.findFirst({ where: { id, clientId: u.id }, include: { salon: true } });
+    if (!appt) throw notFound('Rendez-vous');
+    return this.bookings.reschedule(appt.salon, id, dto.startAt, { actorId: u.id, clientId: u.id });
+  }
+
   // ─── Espace professionnel ───
 
   /** Planning du salon : par défaut la journée en cours, ou une plage `from`/`to` (AAAA-MM-JJ). */
@@ -74,6 +88,11 @@ export class BookingController {
   @ProSalon() @HttpCode(200) @Post('pro/appointments/:id/status')
   status(@CurrentSalon() salon: Salon, @CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: StatusDto) {
     return this.bookings.updateStatusByPro(salon, u.id, id, dto.status);
+  }
+
+  @ProSalon() @HttpCode(200) @Post('pro/appointments/:id/reschedule')
+  rescheduleByPro(@CurrentSalon() salon: Salon, @CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ProRescheduleDto) {
+    return this.bookings.reschedule(salon, id, dto.startAt, { actorId: u.id, staffId: dto.staffId });
   }
 
   @ProSalon() @HttpCode(200) @Post('pro/appointments/:id/to-queue')

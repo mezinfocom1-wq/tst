@@ -640,3 +640,57 @@ describe('données personnelles', () => {
     expect((await ctx.http().post('/api/me/delete').set(auth(pro)).send({ password: PASSWORD }).expect(409)).body.code).toBe('OWNER_HAS_SALON');
   });
 });
+
+describe('déplacement de rendez-vous', () => {
+  it('déplace un rendez-vous, libère l’ancien créneau, prévient l’autre partie et refuse un créneau occupé', async () => {
+    const { salon, service, pro } = await newPublishedSalon(ctx, admin);
+    const c1 = await newUser(ctx), c2 = await newUser(ctx);
+    const slots = await firstSlot(ctx, salon.id, [{ serviceId: service.id }], undefined, 2);
+    const book = async (c: Session, startAt: string) =>
+      (await ctx.http().post(`/api/salons/${salon.id}/bookings`).set(auth(c)).send({ items: [{ serviceId: service.id }], startAt }).expect(201)).body.appointments[0];
+    const a1 = await book(c1, slots[0].startAt);
+    const a2 = await book(c2, slots[4].startAt);
+
+    // Vers un créneau déjà pris : refusé, rien ne change.
+    expect((await ctx.http().post(`/api/appointments/${a1.id}/reschedule`).set(auth(c1)).send({ startAt: slots[4].startAt }).expect(409)).body.code).toBe('SLOT_UNAVAILABLE');
+    expect((await ctx.prisma.appointment.findUniqueOrThrow({ where: { id: a1.id } })).startAt.toISOString()).toBe(slots[0].startAt);
+    // Un autre client ne peut pas déplacer ce rendez-vous.
+    await ctx.http().post(`/api/appointments/${a1.id}/reschedule`).set(auth(c2)).send({ startAt: slots[8].startAt }).expect(404);
+
+    // Déplacement d'un quart d'heure : le nouveau créneau chevauche l'ancien, ce qui doit rester possible.
+    const moved = (await ctx.http().post(`/api/appointments/${a1.id}/reschedule`).set(auth(c1)).send({ startAt: slots[1].startAt }).expect(200)).body;
+    expect(moved.startAt).toBe(slots[1].startAt);
+    await ctx.http().post(`/api/appointments/${a1.id}/reschedule`).set(auth(c1)).send({ startAt: slots[10].startAt }).expect(200);
+    const free = (await firstSlot(ctx, salon.id, [{ serviceId: service.id }], undefined, 2)).map((s) => s.startAt);
+    expect(free).toContain(slots[0].startAt);
+    expect(free).not.toContain(slots[10].startAt);
+    expect(await ctx.prisma.notification.count({ where: { userId: pro.id, type: 'booking_rescheduled' } })).toBeGreaterThan(0);
+
+    // Le salon déplace le rendez-vous du second client, qui en est averti ; l'historique garde la trace.
+    await ctx.http().post(`/api/pro/appointments/${a2.id}/reschedule`).set(auth(pro)).send({ startAt: slots[10].startAt }).expect(409);
+    await ctx.http().post(`/api/pro/appointments/${a2.id}/reschedule`).set(auth(pro)).send({ startAt: slots[14].startAt }).expect(200);
+    expect(await ctx.prisma.notification.count({ where: { userId: c2.id, type: 'booking_rescheduled' } })).toBe(2);
+    const history = (await ctx.http().get(`/api/pro/appointments/${a2.id}/history`).set(auth(pro))).body;
+    expect(history[history.length - 1].note).toMatch(/^Déplacé du /);
+
+    // Un rendez-vous annulé ne se déplace plus ; deux déplacements simultanés vers le même créneau : un seul passe.
+    await ctx.http().post(`/api/appointments/${a2.id}/cancel`).set(auth(c2)).expect(200);
+    await ctx.http().post(`/api/appointments/${a2.id}/reschedule`).set(auth(c2)).send({ startAt: slots[20].startAt }).expect(409);
+    const b1 = await book(c2, slots[20].startAt);
+    const race = await Promise.all([
+      ctx.http().post(`/api/appointments/${a1.id}/reschedule`).set(auth(c1)).send({ startAt: slots[30].startAt }),
+      ctx.http().post(`/api/appointments/${b1.id}/reschedule`).set(auth(c2)).send({ startAt: slots[30].startAt }),
+    ]);
+    expect(race.map((r) => r.status).sort()).toEqual([200, 409]);
+  });
+});
+
+describe('fuseau horaire', () => {
+  it('expose la table des décalages du Maroc, publique et mise en cache', async () => {
+    const res = await ctx.http().get('/api/meta/timezone').expect(200);
+    expect(res.headers['cache-control']).toContain('max-age=3600');
+    expect(res.body.zone).toBe('Africa/Casablanca');
+    expect(res.body.transitions[0].at).toBeLessThan(Date.now() - 300 * 86_400_000);
+    expect(res.body.transitions.every((t: { offsetMin: number }) => [0, 60].includes(t.offsetMin))).toBe(true);
+  });
+});

@@ -560,4 +560,10 @@ export const AR: Record<string, string> = {
   "Supprimer mon compte": "حذف حسابي",
   "Cette action est définitive : vos rendez-vous à venir et vos tickets seront annulés, vos points de fidélité perdus.": "هذا الإجراء نهائي: ستُلغى مواعيدك القادمة وتذاكرك، وستفقد نقاط الوفاء.",
   "Supprimer définitivement": "حذف نهائي",
+  // ─── Déplacement de rendez-vous ───
+  "Déplacer": "تغيير الموعد",
+  "Déplacer le rendez-vous": "تغيير الموعد",
+  "Déplacer au {date} à {time}": "تغيير إلى {date} على الساعة {time}",
+  "Choisissez un créneau": "اختر موعدا",
+  "Le client est prévenu du changement d’horaire.": "يتم إخبار الزبون بتغيير الموعد.",
 };

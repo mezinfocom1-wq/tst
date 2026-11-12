@@ -1,4 +1,5 @@
 import { AR } from './ar';
+import { toLocal } from './zone';
 
 export const LOCALES = ['fr', 'ar'] as const;
 export type Locale = (typeof LOCALES)[number];
@@ -20,19 +21,20 @@ export function translate(locale: Locale) {
 }
 
 const intl = (locale: Locale) => (locale === 'ar' ? 'ar-MA' : 'fr-MA');
-const TZ = 'Africa/Casablanca';
+const format = (locale: string, options: Intl.DateTimeFormatOptions, d: string | number | Date) =>
+  new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(toLocal(d));
 
+/** Formats d'affichage. Toutes les heures sont celles du Maroc, d'après la table fournie par le serveur (voir zone.ts). */
 export const fmt = {
   mad: (n: number | null | undefined, locale: Locale) => (n == null ? '—' : `${n.toLocaleString(intl(locale))} ${locale === 'ar' ? 'درهم' : 'DH'}`),
-  date: (d: string | Date, locale: Locale) =>
-    new Intl.DateTimeFormat(intl(locale), { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ }).format(new Date(d)),
-  shortDate: (d: string | Date, locale: Locale) =>
-    new Intl.DateTimeFormat(intl(locale), { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ }).format(new Date(d)),
-  time: (d: string | Date | number) =>
-    new Intl.DateTimeFormat('fr-MA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ }).format(new Date(d)),
-  dateTime: (d: string | Date, locale: Locale) => `${fmt.shortDate(d, locale)} ${fmt.time(d)}`,
+  date: (d: string | Date | number, locale: Locale) => format(intl(locale), { weekday: 'long', day: 'numeric', month: 'long' }, d),
+  shortDate: (d: string | Date | number, locale: Locale) => format(intl(locale), { day: '2-digit', month: '2-digit', year: 'numeric' }, d),
+  time: (d: string | Date | number) => format('fr-MA', { hour: '2-digit', minute: '2-digit', hour12: false }, d),
+  dateTime: (d: string | Date | number, locale: Locale) => `${fmt.shortDate(d, locale)} ${fmt.time(d)}`,
+  monthShort: (d: string | Date | number, locale: Locale) => format(intl(locale), { month: 'short' }, d),
+  dayOfMonth: (d: string | Date | number) => toLocal(d).getUTCDate(),
   /** Jour local (Maroc) au format AAAA-MM-JJ. */
-  day: (d: Date | number = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(d)),
+  day: (d: Date | number = new Date()) => toLocal(d).toISOString().slice(0, 10),
   minutes: (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`,
   weekday: (index: number, locale: Locale) =>
     new Intl.DateTimeFormat(intl(locale), { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 7 + index))),

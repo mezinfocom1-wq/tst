@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { LoginGate } from '@/components/LoginGate';
+import { RescheduleModal } from '@/components/RescheduleModal';
 import { TicketCard } from '@/components/TicketCard';
 import { Alert, Badge, Button, Card, Empty, Field, Input, Modal, Spinner, Tabs, Textarea, Toggle, buttonClass, cx } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -44,6 +45,7 @@ function Appointments() {
   const { locale, t } = useI18n();
   const { data, reload } = useApi<any[]>('/me/appointments');
   const [review, setReview] = useState<{ appointmentId: string; salon: string } | null>(null);
+  const [moving, setMoving] = useState<any>(null);
   const action = useAction();
   if (!data) return <Spinner />;
   const now = Date.now();
@@ -55,8 +57,8 @@ function Appointments() {
     return (
       <Card key={a.id} className="flex flex-wrap items-center gap-4 p-4">
         <div className="flex w-16 shrink-0 flex-col items-center rounded-xl bg-sand-deep py-2">
-          <span className="text-xs uppercase text-muted">{new Intl.DateTimeFormat(locale === 'ar' ? 'ar-MA' : 'fr-MA', { month: 'short', timeZone: 'Africa/Casablanca' }).format(new Date(a.startAt))}</span>
-          <span className="text-2xl font-semibold tabular-nums">{new Intl.DateTimeFormat('fr-MA', { day: 'numeric', timeZone: 'Africa/Casablanca' }).format(new Date(a.startAt))}</span>
+          <span className="text-xs uppercase text-muted">{fmt.monthShort(a.startAt, locale)}</span>
+          <span className="text-2xl font-semibold tabular-nums">{fmt.dayOfMonth(a.startAt)}</span>
         </div>
         <div className="min-w-0 flex-1">
           <Link href={`/${locale}/salons/${a.salon.slug}`} className="font-medium hover:text-brand-700">{a.salon.name}</Link>
@@ -65,6 +67,9 @@ function Appointments() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <Badge tone={tone}>{t(label)}</Badge>
+          {isUpcoming && canCancel && (
+            <Button variant="outline" size="sm" onClick={() => setMoving({ id: a.id, salonId: a.salon.id, serviceId: a.service.id, staffId: a.staff.id, startAt: a.startAt })}>{t('Déplacer')}</Button>
+          )}
           {isUpcoming && canCancel && (
             <Button variant="outline" size="sm" busy={action.busy}
               onClick={() => confirm(t('Annuler ce rendez-vous ?')) && action.run(async () => { await api(`/appointments/${a.id}/cancel`, { method: 'POST' }); await reload(); })}>{t('Annuler')}</Button>
@@ -87,6 +92,7 @@ function Appointments() {
       </section>
       {!!past.length && <section><h2 className="mb-3 text-lg font-semibold">{t('Historique')}</h2><div className="space-y-3">{past.map((a) => row(a, false))}</div></section>}
       <ReviewModal target={review} onClose={(saved) => { setReview(null); if (saved) reload(); }} />
+      <RescheduleModal target={moving} onClose={(moved) => { setMoving(null); if (moved) reload(); }} />
     </div>
   );
 }

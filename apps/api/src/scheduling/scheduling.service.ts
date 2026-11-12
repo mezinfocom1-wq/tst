@@ -35,7 +35,7 @@ export class SchedulingService {
   constructor(private prisma: PrismaService) {}
 
   /** Charge, pour un jour donné, les horaires et les occupations de chaque professionnel actif du salon. */
-  async loadDay(salonId: string, day: string, now = Date.now()): Promise<StaffDay[]> {
+  async loadDay(salonId: string, day: string, now = Date.now(), ignoreAppointmentId?: string): Promise<StaffDay[]> {
     const [dayStart, dayEnd] = dayBounds(day);
     const range = { lt: new Date(dayEnd) };
     const staff = await this.prisma.staffMember.findMany({
@@ -46,7 +46,8 @@ export class SchedulingService {
         workingHours: { where: { weekday: weekdayOf(day) } },
         timeOffs: { where: { startAt: range, endAt: { gt: new Date(dayStart) } } },
         appointments: {
-          where: { status: { in: [...ACTIVE_APPOINTMENT] }, startAt: range, endAt: { gt: new Date(dayStart) } },
+          // Lors d'un déplacement, le rendez-vous déplacé ne se bloque pas lui-même.
+          where: { status: { in: [...ACTIVE_APPOINTMENT] }, startAt: range, endAt: { gt: new Date(dayStart) }, ...(ignoreAppointmentId ? { id: { not: ignoreAppointmentId } } : {}) },
         },
         tickets: { where: { salonId, status: { in: ['CALLED', 'IN_SERVICE'] } }, include: { service: true } },
       },

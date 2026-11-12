@@ -57,11 +57,41 @@ function NewAppointment({ open, onClose, day }: { open: boolean; onClose: (saved
   );
 }
 
+function MoveAppointment({ appointment, onClose }: { appointment: any; onClose: (saved: boolean) => void }) {
+  const { t } = useI18n();
+  const { data: staff } = useApi<any[]>('/pro/staff');
+  const [form, setForm] = useState({ date: fmt.day(new Date(appointment.startAt)), time: fmt.time(appointment.startAt), staffId: appointment.staff.id as string });
+  const action = useAction();
+  return (
+    <Modal open onClose={() => onClose(false)} title={t('Déplacer le rendez-vous')}>
+      <div className="space-y-4">
+        <p className="text-sm text-muted">{appointment.clientName} · {appointment.service.name}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('Date')}><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
+          <Field label={t('Heure')}><Input type="time" step={300} value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></Field>
+        </div>
+        <Field label={t('Professionnel')}>
+          <Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })}>
+            {(staff ?? []).filter((m) => m.active).map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}
+          </Select>
+        </Field>
+        {action.error && <Alert>{action.error}</Alert>}
+        <Button className="w-full" busy={action.busy} onClick={() => action.run(async () => {
+          await api(`/pro/appointments/${appointment.id}/reschedule`, { body: { startAt: casablancaToIso(form.date, form.time), staffId: form.staffId } });
+          onClose(true);
+        })}>{t('Déplacer')}</Button>
+        <p className="text-xs text-muted">{t('Le client est prévenu du changement d’horaire.')}</p>
+      </div>
+    </Modal>
+  );
+}
+
 export default function Agenda() {
   const { locale, t } = useI18n();
   const { salon } = usePro();
   const [day, setDay] = useState(fmt.day());
   const [creating, setCreating] = useState(false);
+  const [moving, setMoving] = useState<any>(null);
   const { data, reload } = useApi<any[]>(`/pro/appointments?from=${day}&to=${day}`, 30_000);
   const action = useAction();
   const setStatus = (id: string, status: string) => action.run(async () => { await api(`/pro/appointments/${id}/status`, { body: { status } }); await reload(); });
@@ -109,6 +139,7 @@ export default function Agenda() {
                         <Button key={status} size="sm" variant={variant} disabled={action.busy}
                           onClick={() => (status !== 'CANCELLED' || confirm(t('Annuler ce rendez-vous ?'))) && setStatus(a.id, status)}>{label}</Button>
                       ))}
+                      {a.status === 'CONFIRMED' && <Button size="sm" variant="ghost" disabled={action.busy} onClick={() => setMoving(a)}>{t('Déplacer')}</Button>}
                       {a.status === 'NO_SHOW' && salon.allowRequeue && salon.queueEnabled && (
                         <Button size="sm" variant="outline" disabled={action.busy}
                           onClick={() => action.run(async () => { await api(`/pro/appointments/${a.id}/to-queue`, { method: 'POST' }); await reload(); })}>{t('Replacer dans la file')}</Button>
@@ -121,6 +152,7 @@ export default function Agenda() {
           ))}
         </div>
       )}
+      {moving && <MoveAppointment appointment={moving} onClose={(saved) => { setMoving(null); if (saved) reload(); }} />}
       <NewAppointment key={String(creating)} open={creating} day={day} onClose={(saved) => { setCreating(false); if (saved) reload(); }} />
     </>
   );

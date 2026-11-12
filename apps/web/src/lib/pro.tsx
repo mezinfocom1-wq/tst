@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext } from 'react';
+import { localToUtc } from './zone';
 
 export interface ProSalon {
   id: string; slug: string; name: string; description: string; type: string; phone: string | null; email: string | null;
@@ -17,9 +18,4 @@ export const ProContext = createContext<{ salon: ProSalon; reload: () => Promise
 export const usePro = () => useContext(ProContext);
 
 /** Convertit une date et une heure saisies en heure du Maroc vers un instant ISO (UTC). */
-export function casablancaToIso(day: string, time: string) {
-  const guess = new Date(`${day}T${time}:00Z`);
-  const shown = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Africa/Casablanca', dateStyle: 'short', timeStyle: 'medium' }).format(guess);
-  const offset = new Date(`${shown.replace(' ', 'T')}Z`).getTime() - guess.getTime();
-  return new Date(guess.getTime() - offset).toISOString();
-}
+export const casablancaToIso = (day: string, time: string) => localToUtc(day, time).toISOString();

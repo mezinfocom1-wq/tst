@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /fr/pro
+Disallow: /ar/pro
+Disallow: /fr/admin
+Disallow: /ar/admin
+Disallow: /fr/account
+Disallow: /ar/account

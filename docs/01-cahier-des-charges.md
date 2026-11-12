@@ -1,9 +1,9 @@
 # Cahier des charges — Plateforme de réservation et de gestion de salons de coiffure / barbershops (Maroc)
 
 > Document vivant. Mis à jour à chaque décision.
-> Légende : **VALIDÉ** = décidé par le porteur du projet · **PROPOSITION** = recommandation en attente de validation · **À CONFIRMER** = décision ouverte.
+> Légende : **VALIDÉ** = décidé par le porteur du projet · **PAR DÉFAUT** = recommandation appliquée sans validation explicite, réversible · **À CONFIRMER** = décision ouverte.
 
-Version : 0.3 — Phase 1 (finalisation des exigences) — aucun code écrit à ce stade.
+Version : 1.0 — première version développée. Les décisions encore ouvertes ont été tranchées par défaut à la demande du porteur du projet (section 5) et restent modifiables.
 
 ---
 
@@ -55,13 +55,13 @@ Plateforme hybride destinée au marché marocain :
 | C-01 | Propriétaire vs membres d'équipe | « Pas de distinction propriétaire / professionnel » mais aussi « vue globale du propriétaire », « permissions des membres », « abonnement géré par le propriétaire ». | Une seule entité *Professionnel* ; la différence est portée par l'*appartenance au salon* (rôle `OWNER` ou `MEMBER`), pas par le type de compte. |
 | C-02 | Un seul rôle par compte | Un coiffeur ne pourrait pas réserver chez un confrère avec son compte professionnel. | **Résolu** : le rôle professionnel inclut les capacités client (V-26) |
 | C-03 | Rendez-vous + file d'attente sur le même professionnel | Les deux modes consomment le même temps de travail ; aucune règle de priorité n'est définie. C'est le cœur du moteur de planification. | **Résolu** : mode hybride, priorité au rendez-vous (V-25) |
-| C-04 | Compte obligatoire vs clients sans smartphone | Un client qui entre sans téléphone n'apparaît pas dans la file : les positions et estimations deviennent fausses. | Permettre au professionnel d'ajouter un « client de passage » manuellement. → D-05 |
-| C-05 | Paiement vs validation du salon | Les deux validations sont indépendantes mais l'ordre n'est pas défini : que se passe-t-il si le paiement est validé et le salon refusé (remboursement ? date de début de l'abonnement ?). | → D-06 |
-| C-06 | Statuts de paiement | « Expiré » et « Suspendu » sont des états d'abonnement, pas de paiement. | Deux machines à états distinctes : *Paiement* (en attente, à vérifier, validé, refusé) et *Abonnement* (en attente, actif, expiré, suspendu, annulé). PROPOSITION |
-| C-07 | « Espace indépendant par professionnel » vs multi-salons | Le locataire (tenant) est-il le salon ou l'entreprise qui possède plusieurs salons ? | Modèle *Organisation → Salon(s)* dès le départ, avec un seul salon par organisation au MVP. → D-03 |
-| C-08 | File d'attente à distance | Le bouton « rejoindre la file » sur la page publique permet de s'inscrire sans être sur place : risque de tickets fantômes. | Règle de présence / distance / confirmation. → D-04 |
-| C-09 | Périmètre V1 très large | Toutes les fonctionnalités + 3 plateformes en « première version » est incompatible avec la notion de MVP. | Découpage en lots, section 6. → D-07 |
-| C-10 | Email seul comme canal hors application | Au Maroc l'usage du téléphone / WhatsApp domine ; une vérification email bloquante peut réduire fortement la conversion, surtout devant le salon (QR Code). | À arbitrer : vérification email différée ou non bloquante pour la file. → D-08 |
+| C-04 | Compte obligatoire vs clients sans smartphone | Un client qui entre sans téléphone n'apparaît pas dans la file : les positions et estimations deviennent fausses. | Résolu : client de passage ajouté par le professionnel (D-05) |
+| C-05 | Paiement vs validation du salon | Les deux validations sont indépendantes mais l'ordre n'est pas défini : que se passe-t-il si le paiement est validé et le salon refusé (remboursement ? date de début de l'abonnement ?). | Résolu (D-06) |
+| C-06 | Statuts de paiement | « Expiré » et « Suspendu » sont des états d'abonnement, pas de paiement. | Deux machines à états distinctes : *Paiement* (en attente, à vérifier, validé, refusé) et *Abonnement* (en attente, actif, expiré, suspendu, annulé). Appliqué |
+| C-07 | « Espace indépendant par professionnel » vs multi-salons | Le locataire (tenant) est-il le salon ou l'entreprise qui possède plusieurs salons ? | Un salon par propriétaire dans cette version ; le multi-salons reste une évolution (D-03) |
+| C-08 | File d'attente à distance | Le bouton « rejoindre la file » sur la page publique permet de s'inscrire sans être sur place : risque de tickets fantômes. | Résolu : option « sur place uniquement » par salon (D-04) |
+| C-09 | Périmètre V1 très large | Toutes les fonctionnalités + 3 plateformes en « première version » est incompatible avec la notion de MVP. | Tout le périmètre a été développé (D-07) |
+| C-10 | Email seul comme canal hors application | Au Maroc l'usage du téléphone / WhatsApp domine ; une vérification email bloquante peut réduire fortement la conversion, surtout devant le salon (QR Code). | Résolu : email vérifié exigé pour réserver, pas pour la file (D-08) |
 
 ## 4. Informations manquantes
 
@@ -87,80 +87,89 @@ Plateforme hybride destinée au marché marocain :
 - Budget d'infrastructure mensuel, calendrier souhaité.
 - Nom de la marque, domaine, comptes développeur Apple et Google.
 
-## 5. Décisions restantes (ordre de traitement proposé)
+## 5. Décisions
 
-| # | Décision | Impact | Statut |
-|---|----------|--------|--------|
-| D-01 | Cohabitation rendez-vous / file d'attente pour un même professionnel | Moteur de planification, estimation, UX | **VALIDÉ** — option C, hybride avec priorité au rendez-vous |
-| D-01b | Paramètres du mode hybride : débordement toléré ou non sur un rendez-vous, comportement si le client du rendez-vous est en retard | Moteur de planification | À CONFIRMER (traité avec D-09) |
-| D-02 | Portée de « un seul rôle par compte » (un professionnel peut-il réserver comme client ?) | Modèle de comptes, application mobile | **VALIDÉ** — option B, le rôle professionnel inclut les capacités client |
-| D-03 | Modèle Organisation / Salon / Membres et rôles d'équipe (les membres ont-ils leur propre connexion ?) | Multi-tenant, modèle de données | À CONFIRMER — **question en cours** |
-| D-04 | File d'attente à distance : autorisée, limitée par distance, ou sur place uniquement | Anti-abus, géolocalisation | À CONFIRMER |
-| D-05 | Clients de passage ajoutés par le professionnel (file et rendez-vous) | Fiabilité de la file, modèle client | À CONFIRMER |
-| D-06 | Enchaînement inscription → validation salon → paiement → publication ; essai ; remboursement | Parcours professionnel, abonnements | À CONFIRMER |
-| D-07 | Découpage MVP / V1.1 / V2 | Planning, charge | À CONFIRMER |
-| D-08 | Vérification email bloquante ou non ; téléphone obligatoire ou non | Conversion, lutte contre les absences | À CONFIRMER |
-| D-09 | Politique d'annulation, de retard et d'absence par défaut | Règles métier, notifications | À CONFIRMER |
-| D-10 | Réservation de groupe : règles de planification (consécutif, parallèle, écart maximal) | Algorithme, atomicité | À CONFIRMER |
-| D-11 | Plans, limites, tarifs, durée d'engagement | Modèle d'abonnement | À CONFIRMER |
-| D-12 | Fidélité : périmètre, expiration, types de récompenses | Modèle de données | À CONFIRMER |
-| D-13 | Avis : éligibilité, modération, réponse | Marketplace | À CONFIRMER |
-| D-14 | Critères et pondérations du classement | Recherche | À CONFIRMER |
-| D-15 | Facturation (mentions légales, TVA, numérotation) | Abonnements, conformité | À CONFIRMER |
-| D-16 | Hébergement et localisation des données (CNDP) | Infrastructure | À CONFIRMER |
-| D-17 | Connexion Apple sur iOS et gestion des abonnements hors application | Publication App Store | À CONFIRMER |
-| D-18 | Choix techniques définitifs (Phase 2) | Architecture | À CONFIRMER |
+Le 11 novembre 2026, le porteur du projet a demandé de construire le système sans poser d'autres questions.
+Les décisions ci-dessous marquées **PAR DÉFAUT** ont donc été prises en appliquant la recommandation de l'équipe technique.
+Elles sont toutes réversibles ; celles qui ne demandent qu'un réglage (sans développement) sont signalées.
 
-## 6. Découpage MVP / évolutions — PROPOSITION (à valider en D-07)
+| # | Décision | Choix appliqué | Statut |
+|---|----------|----------------|--------|
+| D-01 | Cohabitation rendez-vous / file d'attente | Hybride avec priorité au rendez-vous ; chaque salon peut désactiver l'un des deux modes | VALIDÉ |
+| D-01b | Débordement sur un rendez-vous | Refusé par défaut ; le professionnel peut forcer après confirmation explicite | PAR DÉFAUT |
+| D-02 | Un professionnel peut-il réserver comme client ? | Oui, dans les autres salons ; ni réservation ni avis dans le sien | VALIDÉ |
+| D-03 | Membres d'équipe | Fiches gérées par le propriétaire, rattachables plus tard à un compte (le modèle de données le prévoit) ; un salon par propriétaire | PAR DÉFAUT |
+| D-04 | File à distance | Autorisée par défaut ; chaque salon peut la réserver aux clients sur place (QR Code obligatoire) — réglage | PAR DÉFAUT |
+| D-05 | Clients de passage | Le professionnel peut ajouter un client sans compte à la file et saisir un rendez-vous pour un client au téléphone | PAR DÉFAUT |
+| D-06 | Enchaînement professionnel | Demande → validation → création du salon → soumission → approbation ; abonnement payé en parallèle. Publication = salon approuvé **et** abonnement actif. Pas de période d'essai. L'abonnement démarre à la validation du paiement | PAR DÉFAUT |
+| D-07 | Périmètre de la première version | Tout le périmètre du cahier des charges a été développé (voir section 6) | PAR DÉFAUT |
+| D-08 | Vérification de l'email | Exigée pour réserver un rendez-vous et pour déposer une demande professionnelle (réglage Super Admin) ; non exigée pour prendre un ticket de file | PAR DÉFAUT |
+| D-09 | Annulation, retard, absence | Annulation client jusqu'à 2 h avant ; tolérance de retard 10 min ; absence marquée par le professionnel après la tolérance ; réintégration dans la file possible — réglages par salon | PAR DÉFAUT |
+| D-10 | Réservation de groupe | Jusqu'à 6 personnes, passages consécutifs ou simultanés, professionnel choisi ou « peu importe », tout ou rien | PAR DÉFAUT |
+| D-11 | Formules et tarifs | Starter 149 DH, Pro 299 DH, Business 499 DH pour 30 jours — **hypothèses**, modifiables dans le back-office | PAR DÉFAUT |
+| D-12 | Fidélité | Points propres à chaque salon, par visite et par tranche de 10 DH ; récompenses échangées contre un bon validé en salon ; pas d'expiration | PAR DÉFAUT |
+| D-13 | Avis | Uniquement après une prestation terminée, un avis par prestation, réponse du salon, masquage par le Super Admin | PAR DÉFAUT |
+| D-14 | Classement | Score pondéré (proximité, note, nombre d'avis, ouverture) ; pondérations réglables par le Super Admin | PAR DÉFAUT |
+| D-15 | Facturation | Reçu numéroté généré à la validation du paiement. Les mentions légales d'une facture (ICE, TVA) restent à définir avec un comptable | À CONFIRMER |
+| D-16 | Hébergement | Non choisi. Le système se déploie sur tout serveur Docker ; le choix dépend des formalités CNDP | À CONFIRMER |
+| D-17 | Publication App Store | La gestion de l'abonnement se fait sur le Web uniquement. La connexion Apple n'est pas développée : à vérifier avant d'activer la connexion Google sur iOS | À CONFIRMER |
+| D-18 | Technologies | NestJS, PostgreSQL, Prisma, Next.js, Expo — détail dans `02-architecture.md` | PAR DÉFAUT |
 
-**Lot 1 — MVP**
-- Authentification client (email + Google), profil, sessions.
-- Demande d'accès professionnel, validation Super Admin, statuts du salon.
-- Salon : profil, logo, photos, services, tarifs, durées, horaires, pauses, absences.
-- Marketplace : page publique, recherche par ville / quartier / prestation / note, carte.
-- Réservation classique avec protection contre les doubles réservations.
-- File d'attente : QR Code, ticket, position, estimation par calcul, « Peu importe ».
-- Retards et absences : tolérance configurable, historique des statuts.
-- Notifications Push + Email avec historique et préférences.
-- Abonnements : plans configurables, paiement manuel, validation Super Admin, expiration.
-- Back-office Super Admin : comptes, salons, paiements, journaux, statistiques de base.
-- Français + Arabe (RTL), MAD, fuseau `Africa/Casablanca`.
-- Web responsive + application mobile (client et professionnel).
+## 6. État de réalisation
 
-**Lot 2 — V1.1**
-- Réservation de groupe.
-- Programme de fidélité.
-- Avis et notes avec modération.
-- Membres d'équipe avec permissions fines.
-- Statistiques avancées, classement configurable par pondérations.
-- Modèles de notifications personnalisables, reçus / factures PDF.
+Légende : ✅ développé et testé · 🟡 développé, vérification partielle · ⬜ non développé.
 
-**Lot 3 — Évolutions**
-- SMS / WhatsApp, paiement en ligne (CMI ou équivalent), acomptes.
-- Multi-salons, personnalisation avancée de l'identité visuelle.
-- Estimation prédictive (apprentissage automatique).
-- Autres langues.
+| Domaine | État | Précisions |
+|---------|------|------------|
+| Comptes, sessions, vérification email, mot de passe oublié | ✅ | Tests automatisés |
+| Connexion Google | 🟡 | Développée côté API et Web ; non testée faute d'identifiant Google (variable `GOOGLE_CLIENT_ID`) |
+| Demande professionnelle et validation Super Admin | ✅ | |
+| Salon : fiche, logo, photos, prestations, équipe, horaires, absences | ✅ | |
+| Validation administrative des salons | ✅ | |
+| Marketplace : recherche, filtres, carte, classement configurable | ✅ | Filtre « disponibilité » = ouvert maintenant |
+| Réservation classique | ✅ | Double réservation impossible (contrainte en base, testée avec 20 demandes simultanées) |
+| Réservation de groupe | ✅ | Web ; l'application mobile réserve pour une personne |
+| Retards, absences, réintégration, historique des statuts | ✅ | |
+| File d'attente : QR Code, ticket, position, estimation, « peu importe », temps réel | ✅ | |
+| Estimation fondée sur les durées réelles | ✅ | Interface prête pour un modèle prédictif |
+| Fidélité | ✅ | |
+| Avis | ✅ | |
+| Notifications email | 🟡 | Envoi SMTP développé ; non testé avec un vrai serveur (sans configuration, les emails sont journalisés) |
+| Notifications push | 🟡 | Enregistrement de l'appareil et envoi via le service Expo développés ; non testés sur un téléphone réel |
+| Historique, statuts et préférences de notification, modèles modifiables | ✅ | |
+| Formules configurables, paiement manuel, validation, expiration, reçus | ✅ | |
+| Back-office Super Admin | ✅ | Interface en français uniquement |
+| Journal d'activité | ✅ | |
+| Réclamations | ✅ | |
+| Français / arabe (RTL), DH, fuseau du Maroc | ✅ | Web et mobile ; back-office en français |
+| Site Web responsive | ✅ | Parcours vérifiés dans un navigateur réel |
+| Application mobile Android / iOS | 🟡 | Code compilé et paquets Android / iOS construits ; non exécutée sur appareil ou émulateur |
+| Stockage S3 | 🟡 | Pilote développé, non testé ; le stockage local est testé |
+| Déploiement Docker, CI | 🟡 | Fichiers fournis ; images Docker non construites dans l'environnement de développement |
+| Comptes membres d'équipe avec connexion propre | ⬜ | Prévu par le modèle de données |
+| Multi-salons | ⬜ | |
+| SMS, WhatsApp, paiement en ligne | ⬜ | Reportés (cahier des charges) |
+| Suppression de compte en libre-service | ⬜ | À prévoir pour la conformité |
+| Connexion Apple | ⬜ | Voir D-17 |
 
-> Remarque : la réservation de groupe, la fidélité et les avis sont demandés dans le cahier des charges. Leur placement en Lot 2 est une proposition de phasage, pas une suppression.
+## 7. Risques restants
 
-## 7. Risques
-
-| # | Risque | Gravité | Mesure envisagée |
-|---|--------|---------|------------------|
-| R-01 | Périmètre trop large pour une première version (3 plateformes, 2 modes de réservation, SaaS, back-office) | Élevée | Lots successifs, application mobile unique partageant le code |
-| R-02 | Conflits de planification (doubles réservations, groupe partiel, concurrence) | Élevée | Contraintes en base de données + transactions + tests de concurrence |
-| R-03 | Fuite de données entre salons | Élevée | Isolation au niveau base (RLS) en plus du contrôle applicatif, tests multi-tenant |
-| R-04 | Refus de publication sur l'App Store (connexion tierce sans alternative, abonnement payé hors application) | Moyenne | Vérifier les règles Apple en vigueur ; gérer l'abonnement sur le Web uniquement — À VÉRIFIER |
-| R-05 | Faible adoption à cause de l'email (vérification, notifications) | Moyenne | Push prioritaire, vérification non bloquante, SMS / WhatsApp en Lot 3 |
-| R-06 | Absences et tickets fantômes dans la file | Moyenne | Tolérance, confirmation de présence, limitation par compte |
-| R-07 | Estimations d'attente peu fiables au démarrage (pas d'historique) | Moyenne | Durées déclarées par défaut, corrigées progressivement par les durées réelles |
-| R-08 | Non-conformité loi 09-08 / CNDP | Moyenne | Déclaration, registre des traitements, choix d'hébergement documenté — avis juridique requis |
-| R-09 | Charge de validation manuelle (salons, paiements) pour un Super Admin unique | Faible à moyenne | File de traitement, notifications administratives, sous-comptes ultérieurs |
+| # | Risque | Mesure |
+|---|--------|--------|
+| R-01 | Application mobile non testée sur appareil réel | Recette sur Android et iOS avant publication |
+| R-02 | Refus App Store (connexion tierce, abonnement hors application) | Vérifier les règles Apple en vigueur ; voir D-17 |
+| R-03 | Conformité loi 09-08 / CNDP | Formalités et avis juridique avant la mise en service ; politique de confidentialité fournie comme modèle |
+| R-04 | Faible usage de l'email au Maroc | Push prioritaire ; SMS / WhatsApp dans une version ultérieure |
+| R-05 | Charge de validation manuelle | Notifications au Super Admin ; sous-comptes administrateurs à prévoir |
+| R-06 | Montée en charge | Une seule instance d'API suffit au lancement ; voir `03-exploitation.md` pour la suite |
+| R-07 | Tarifs non validés | Hypothèses modifiables sans développement |
 
 ## 8. Journal des décisions
 
 | Date | Décision | Réf. |
 |------|----------|------|
-| 2026-11-11 | Création du document à partir du cahier des charges initial. Aucune décision nouvelle. | — |
-| 2026-11-11 | Cohabitation rendez-vous / file d'attente : mode hybride avec priorité au rendez-vous ; chaque salon peut désactiver l'un des deux modes. | D-01, V-25 |
-| 2026-11-11 | Le rôle professionnel inclut les capacités client ; pas de réservation ni d'avis dans son propre salon. | D-02, V-26 |
+| 2026-11-11 | Création du document à partir du cahier des charges initial. | — |
+| 2026-11-11 | Cohabitation rendez-vous / file d'attente : mode hybride avec priorité au rendez-vous. | D-01 |
+| 2026-11-11 | Le rôle professionnel inclut les capacités client. | D-02 |
+| 2026-11-11 | Demande du porteur du projet : développer sans autre question. Décisions D-03 à D-18 prises par défaut. | D-03 à D-18 |
+| 2026-11-12 | Première version développée : API, site Web, application mobile, déploiement. | Section 6 |

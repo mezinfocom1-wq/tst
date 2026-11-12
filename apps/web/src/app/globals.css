@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/playfair-display";
+@import "@fontsource-variable/noto-sans-arabic";
+
+@theme {
+  --font-sans: "Inter Variable", "Noto Sans Arabic Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display Variable", "Noto Sans Arabic Variable", Georgia, serif;
+
+  --color-ink: #17130f;
+  --color-ink-soft: #4a433b;
+  --color-muted: #7a7166;
+  --color-sand: #faf7f2;
+  --color-sand-deep: #f1ebe1;
+  --color-line: #e6dfd3;
+  --color-surface: #ffffff;
+
+  --color-brand-50: #fbf5ea;
+  --color-brand-100: #f4e4c3;
+  --color-brand-300: #e2b866;
+  --color-brand-500: #c58a2b;
+  --color-brand-600: #a66d1b;
+  --color-brand-700: #85540f;
+
+  --color-ok: #1f7a4d;
+  --color-ok-soft: #e4f3ea;
+  --color-warn: #a65f00;
+  --color-warn-soft: #fbefd9;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fbe6e4;
+  --color-info: #1d5fa8;
+  --color-info-soft: #e3eefb;
+
+  --shadow-card: 0 1px 2px rgb(23 19 15 / 0.04), 0 8px 24px -12px rgb(23 19 15 / 0.12);
+  --radius-xl: 1rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+body {
+  background: var(--color-sand);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+.leaflet-container {
+  font-family: var(--font-sans);
+  border-radius: 1rem;
+  z-index: 0;
+}
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+}

@@ -51,13 +51,19 @@ Application mobile : voir [`docs/03-exploitation.md`](docs/03-exploitation.md#4-
 
 ```bash
 createdb salon_test --owner salon
-pnpm --filter @salon/api test       # 55 tests : sécurité, isolation entre salons, réservations simultanées, file, abonnements, équipe, données personnelles, fuseau horaire
+pnpm --filter @salon/api test       # 56 tests : sécurité, isolation entre salons, réservations simultanées, file, abonnements, équipe, données personnelles, fuseau horaire
 pnpm --filter @salon/web typecheck && pnpm --filter @salon/web build
 cd apps/mobile && npm run typecheck
 node apps/web/e2e/smoke.js          # parcours complets dans un navigateur (API et site démarrés, données de démonstration)
 node apps/web/e2e/team.js           # invitation d'équipe et suppression de compte dans un navigateur
+node apps/web/e2e/mobile-sweep.js   # aucune page ne déborde sur un écran de téléphone
 ```
 
 ## Déploiement
+
+Essai en ligne en un clic (hébergeur Render, formules gratuites, mode démonstration) :
+<https://render.com/deploy?repo=https://github.com/mezinfocom1-wq/tst/tree/claude/salon-booking-platform-puz770> — détail dans [`docs/03-exploitation.md`](docs/03-exploitation.md).
+
+Serveur à soi :
 
 `docker compose up -d --build` après avoir copié `deploy/.env.example` vers `.env`. Détail et liste de contrôle : [`docs/03-exploitation.md`](docs/03-exploitation.md).

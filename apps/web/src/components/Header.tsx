@@ -40,7 +40,8 @@ export function Header() {
         </nav>
         <div className="ms-auto flex items-center gap-2">
           <button onClick={switchLocale} className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-soft hover:bg-sand-deep" aria-label={t('Changer de langue')}>
-            {other === 'ar' ? 'العربية' : 'Français'}
+            <span className="hidden sm:inline">{other === 'ar' ? 'العربية' : 'Français'}</span>
+            <span className="sm:hidden">{other === 'ar' ? 'ع' : 'FR'}</span>
           </button>
           {!loading && !user && (
             <>
@@ -51,7 +52,7 @@ export function Header() {
           {user && (
             <>
               {user.role !== 'SUPER_ADMIN' && (
-                <Link href={`${home}/account?tab=notifications`} className="rounded-lg p-2 text-ink-soft hover:bg-sand-deep" aria-label={t('Notifications')}><Bell className="size-5" /></Link>
+                <Link href={`${home}/account?tab=notifications`} className="hidden rounded-lg p-2 text-ink-soft hover:bg-sand-deep sm:block" aria-label={t('Notifications')}><Bell className="size-5" /></Link>
               )}
               <Link href={space} className={buttonClass('outline', 'sm')}>
                 {user.role === 'CLIENT' ? <UserIcon className="size-4" /> : <LayoutDashboard className="size-4" />}
@@ -67,7 +68,8 @@ export function Header() {
       </div>
       {open && (
         <nav className="border-t border-line px-4 py-3 md:hidden">
-          {[...links, ...(user ? [] : [{ href: `${home}/login`, label: t('Connexion') }, { href: `${home}/register`, label: t('Créer un compte') }])].map((l) => (
+          {[...links, ...(user ? (user.role === 'SUPER_ADMIN' ? [] : [{ href: `${home}/account?tab=notifications`, label: t('Notifications') }])
+            : [{ href: `${home}/login`, label: t('Connexion') }, { href: `${home}/register`, label: t('Créer un compte') }])].map((l) => (
             <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-lg px-2 py-2.5 text-sm text-ink-soft hover:bg-sand-deep">{l.label}</Link>
           ))}
         </nav>

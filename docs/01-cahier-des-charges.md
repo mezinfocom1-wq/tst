@@ -143,10 +143,11 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | Journal d'activité | ✅ | |
 | Réclamations | ✅ | |
 | Français / arabe (RTL), DH, fuseau du Maroc | ✅ | Web et mobile ; back-office en français. L'heure du Maroc est fournie par le serveur : un appareil dont la base de fuseaux est périmée affiche quand même la bonne heure |
-| Site Web responsive | ✅ | Parcours vérifiés dans un navigateur réel |
+| Site Web responsive | ✅ | Parcours vérifiés dans un navigateur réel ; toutes les pages contrôlées à 390 et 360 px de large |
 | Application mobile Android / iOS | 🟡 | Code compilé et paquets Android / iOS construits ; non exécutée sur appareil ou émulateur |
 | Stockage S3 | 🟡 | Pilote développé, non testé ; le stockage local est testé |
 | Déploiement Docker, CI | 🟡 | Fichiers fournis ; images Docker non construites dans l'environnement de développement |
+| Mise en ligne en un clic (Render) | 🟡 | Commandes de construction et de démarrage vérifiées sur une copie neuve ; déploiement réel non effectué |
 | Comptes membres d'équipe avec connexion propre | ✅ | Invitation par email, droits limités, retrait d'accès ; testé (API et navigateur) |
 | Export des données et suppression de compte en libre-service | ✅ | Web et mobile ; le propriétaire d'un salon doit passer par le support |
 | Multi-salons | ⬜ | |
@@ -176,3 +177,4 @@ Légende : ✅ développé et testé · 🟡 développé, vérification partiell
 | 2026-11-12 | Première version développée : API, site Web, application mobile, déploiement. | Section 6 |
 | 2026-11-12 | Ajout des comptes de connexion pour les membres d'équipe, de l'export et de la suppression de compte, et de la réservation de groupe sur mobile. | D-03, section 6 |
 | 2026-11-12 | Ajout du déplacement de rendez-vous. Le serveur devient la référence de l'heure du Maroc pour le Web et le mobile, après constat d'un écart d'une heure entre le serveur (base de fuseaux 2026) et un navigateur non à jour. | Section 6 |
+| 2026-11-13 | Ajout d'une mise en ligne de démonstration en un clic (un seul service, mode démonstration). Correction d'un débordement de page sur téléphone. | Section 6 |

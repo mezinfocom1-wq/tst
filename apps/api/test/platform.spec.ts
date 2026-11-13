@@ -715,3 +715,48 @@ describe('mode démonstration', () => {
     }
   });
 });
+
+describe('hébergement sans disque persistant', () => {
+  it('enregistre les fichiers dans la base avec le pilote « db », en gardant les preuves de paiement privées', async () => {
+    const { config } = await import('../src/common/config');
+    const { pro, paymentId } = await newPublishedSalon(ctx, admin);
+    config.storage.driver = 'db';
+    try {
+      const salon = (await ctx.http().post('/api/pro/salon/logo').set(auth(pro)).attach('file', PNG, 'logo.png').expect(201)).body;
+      expect(salon.logoUrl).toMatch(/^\/uploads\/public\/logos\/[\w-]+\.png$/);
+      const served = await ctx.http().get(salon.logoUrl).expect(200);
+      expect(served.headers['content-type']).toContain('image/png');
+      expect(served.headers['cache-control']).toContain('immutable');
+      expect(Buffer.compare(served.body, PNG)).toBe(0);
+      await ctx.http().get('/uploads/public/logos/inconnu.png').expect(404);
+      await ctx.http().post('/api/pro/salon/logo').set(auth(pro)).attach('file', Buffer.from('pas une image'), 'x.png').expect(400);
+
+      // Une nouvelle preuve de paiement va elle aussi en base, sans jamais être servie publiquement.
+      const plan = await ensurePlan(ctx, 'PRO');
+      const sub = (await ctx.http().post('/api/pro/billing/subscribe').set(auth(pro)).send({ planId: plan.id }).expect(201)).body;
+      const id = sub.payments[0].id;
+      await ctx.http().post(`/api/pro/billing/payments/${id}/proof`).set(auth(pro)).field('reference', 'VIR-DB-1').attach('file', PNG, 'preuve.png').expect(200);
+      const payment = await ctx.prisma.payment.findUniqueOrThrow({ where: { id } });
+      expect(await ctx.prisma.storedFile.count({ where: { key: payment.proofKey! } })).toBe(1);
+      await ctx.http().get(`/uploads/${payment.proofKey}`).expect(404);
+      await ctx.http().get(`/api/pro/billing/payments/${id}/proof`).set(auth(pro)).expect(200).expect('content-type', /image\/png/);
+      await ctx.http().get(`/api/admin/payments/${id}/proof`).set(auth(admin)).expect(200);
+      expect(paymentId).toBeDefined();
+    } finally {
+      config.storage.driver = 'local';
+    }
+  });
+
+  it("ne déclenche les tâches planifiées à distance qu'avec le secret prévu", async () => {
+    await ctx.http().get('/api/internal/jobs').expect(404);
+    process.env.CRON_SECRET = 'secret-de-test-0123456789';
+    try {
+      await ctx.http().get('/api/internal/jobs').expect(404);
+      await ctx.http().get('/api/internal/jobs').set('Authorization', 'Bearer mauvais-secret-0123456789x').expect(404);
+      const res = await ctx.http().get('/api/internal/jobs').set('Authorization', 'Bearer secret-de-test-0123456789').expect(200);
+      expect(res.body).toMatchObject({ reminders: expect.any(Number), expired: expect.any(Number) });
+    } finally {
+      delete process.env.CRON_SECRET;
+    }
+  });
+});

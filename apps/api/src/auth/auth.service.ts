@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { User } from '@prisma/client';
-import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { AuditService } from '../common/audit.service';
 import { config } from '../common/config';
 import { AppError, badRequest, conflict } from '../common/errors';
+import { hashPassword, verifyPassword } from '../common/password';
 import { PrismaService } from '../common/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ChangePasswordDto, RegisterDto, UpdateMeDto } from './auth.dto';
@@ -39,7 +39,7 @@ export class AuthService {
     }
     const user = await this.prisma.user.create({
       data: {
-        email, passwordHash: await argon2.hash(dto.password, { type: argon2.argon2id }),
+        email, passwordHash: await hashPassword(dto.password),
         firstName: dto.firstName.trim(), lastName: dto.lastName.trim(),
         phone: dto.phone, locale: dto.locale ?? 'fr',
         // En mode démonstration, aucun email ne peut être envoyé : l'adresse est considérée comme vérifiée.
@@ -55,13 +55,13 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     const invalid = new AppError(401, 'INVALID_CREDENTIALS', 'Email ou mot de passe incorrect');
     if (!user || !user.passwordHash) {
-      await argon2.hash(password); // temps de réponse constant : ne révèle pas si le compte existe
+      await hashPassword(password); // temps de réponse constant : ne révèle pas si le compte existe
       throw invalid;
     }
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       throw new AppError(429, 'ACCOUNT_LOCKED', `Trop de tentatives. Réessayez dans ${LOCK_MINUTES} minutes`);
     }
-    if (!(await argon2.verify(user.passwordHash, password))) {
+    if (!(await verifyPassword(user.passwordHash, password))) {
       const failed = user.failedLogins + 1;
       const locked = failed >= MAX_FAILED;
       await this.prisma.user.update({
@@ -188,7 +188,7 @@ export class AuthService {
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
-        data: { passwordHash: await argon2.hash(password, { type: argon2.argon2id }), failedLogins: 0, lockedUntil: null, emailVerifiedAt: new Date() },
+        data: { passwordHash: await hashPassword(password), failedLogins: 0, lockedUntil: null, emailVerifiedAt: new Date() },
       }),
       this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ]);
@@ -208,11 +208,11 @@ export class AuthService {
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (user.passwordHash && !(dto.currentPassword && (await argon2.verify(user.passwordHash, dto.currentPassword)))) {
+    if (user.passwordHash && !(dto.currentPassword && (await verifyPassword(user.passwordHash, dto.currentPassword)))) {
       throw badRequest('WRONG_PASSWORD', 'Mot de passe actuel incorrect');
     }
     await this.prisma.user.update({
-      where: { id: userId }, data: { passwordHash: await argon2.hash(dto.newPassword, { type: argon2.argon2id }) },
+      where: { id: userId }, data: { passwordHash: await hashPassword(dto.newPassword) },
     });
     await this.audit.log({ actorId: userId, action: 'auth.password_changed' });
   }
@@ -248,7 +248,7 @@ export class AuthService {
   async deleteAccount(userId: string, password?: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (user.role === 'SUPER_ADMIN') throw badRequest('ADMIN_ACCOUNT', 'Un compte administrateur ne peut pas être supprimé ici');
-    if (user.passwordHash && !(password && (await argon2.verify(user.passwordHash, password)))) {
+    if (user.passwordHash && !(password && (await verifyPassword(user.passwordHash, password)))) {
       throw badRequest('WRONG_PASSWORD', 'Mot de passe incorrect');
     }
     if (await this.prisma.salon.count({ where: { ownerId: userId } })) {

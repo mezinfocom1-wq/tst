@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // « rhel-openssl-3.0.x » : moteur utilisé par les fonctions Vercel (en plus de celui de la machine locale).
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -624,4 +626,12 @@ model Complaint {
   updatedAt  DateTime        @updatedAt
 
   @@index([status])
+}
+
+/// Fichier enregistré dans la base (pilote de stockage « db »), pour les hébergements sans disque persistant.
+model StoredFile {
+  key       String   @id
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
 }

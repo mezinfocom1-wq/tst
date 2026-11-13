@@ -5,11 +5,11 @@
  */
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
+import { hashPassword } from '../src/common/password';
 
 const prisma = new PrismaClient();
-const hash = (p: string) => argon2.hash(p, { type: argon2.argon2id });
+const hash = hashPassword;
 
 // Tarifs indicatifs (hypothèses à valider), modifiables depuis le back-office.
 const PLANS = [

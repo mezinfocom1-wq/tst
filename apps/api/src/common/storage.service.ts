@@ -5,6 +5,7 @@ import { promises as fs } from 'fs';
 import { join, resolve } from 'path';
 import { config } from './config';
 import { badRequest } from './errors';
+import { PrismaService } from './prisma.service';
 
 const SIGNATURES: { mime: string; ext: string; test: (b: Buffer) => boolean }[] = [
   { mime: 'image/jpeg', ext: 'jpg', test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
@@ -20,8 +21,16 @@ export function sniff(buffer: Buffer) {
 
 export const UPLOAD_ROOT = resolve(process.cwd(), 'uploads');
 
+/**
+ * Trois pilotes, choisis par STORAGE_DRIVER :
+ *  - `local` : dossier uploads/ du serveur (développement, serveur avec disque persistant) ;
+ *  - `s3`    : stockage objet compatible S3 (production) ;
+ *  - `db`    : dans la base PostgreSQL (hébergements sans disque persistant, volumes modestes).
+ */
 @Injectable()
 export class StorageService {
+  constructor(private prisma: PrismaService) {}
+
   private s3 = config.storage.driver === 's3'
     ? new S3Client({
         region: config.storage.region,
@@ -47,6 +56,10 @@ export class StorageService {
       }));
       return { key, url: opts.isPublic ? `${config.storage.publicUrl.replace(/\/$/, '')}/${key}` : null };
     }
+    if (config.storage.driver === 'db') {
+      await this.prisma.storedFile.create({ data: { key, mime: kind.mime, data: new Uint8Array(file.buffer) } });
+      return { key, url: opts.isPublic ? `/uploads/${key}` : null };
+    }
     const path = join(UPLOAD_ROOT, key);
     await fs.mkdir(join(path, '..'), { recursive: true });
     await fs.writeFile(path, file.buffer);
@@ -57,6 +70,11 @@ export class StorageService {
   async read(key: string): Promise<{ buffer: Buffer; mime: string }> {
     if (!/^private\/[\w-]+\/[\w-]+\.\w+$/.test(key)) throw badRequest('BAD_KEY', 'Clé de fichier invalide');
     let buffer: Buffer;
+    if (config.storage.driver === 'db') {
+      const row = await this.prisma.storedFile.findUnique({ where: { key } });
+      if (!row) throw badRequest('BAD_KEY', 'Fichier introuvable');
+      return { buffer: Buffer.from(row.data), mime: row.mime };
+    }
     if (this.s3) {
       const res = await this.s3.send(new GetObjectCommand({ Bucket: config.storage.bucket, Key: key }));
       buffer = Buffer.from(await res.Body!.transformToByteArray());
@@ -64,5 +82,12 @@ export class StorageService {
       buffer = await fs.readFile(join(UPLOAD_ROOT, key));
     }
     return { buffer, mime: sniff(buffer)?.mime ?? 'application/octet-stream' };
+  }
+
+  /** Lit un fichier public enregistré en base (pilote « db »). Retourne `null` s'il n'existe pas. */
+  async readPublicFromDb(key: string): Promise<{ buffer: Buffer; mime: string } | null> {
+    if (!/^public\/[\w-]+\/[\w-]+\.\w+$/.test(key)) return null;
+    const row = await this.prisma.storedFile.findUnique({ where: { key } });
+    return row ? { buffer: Buffer.from(row.data), mime: row.mime } : null;
   }
 }

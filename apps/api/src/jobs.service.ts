@@ -27,6 +27,17 @@ export class JobsService {
     }
   }
 
+  /**
+   * Exécute toutes les tâches en une fois. Sert aux hébergements « serverless », où aucun processus ne tourne
+   * en permanence : c'est alors l'hébergeur qui appelle périodiquement la route protégée /api/internal/jobs.
+   */
+  async runAll() {
+    const reminders = await this.bookings.sendReminders();
+    const billing = await this.billing.runExpiry();
+    await this.queue.closeStale();
+    return { reminders, ...billing };
+  }
+
   @Cron('*/5 * * * *')
   reminders() {
     return this.run('rappels', () => this.bookings.sendReminders());

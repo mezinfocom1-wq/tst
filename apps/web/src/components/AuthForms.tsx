@@ -77,9 +77,22 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const action = useAction();
   const done = (s: { accessToken: string; user: User }) => { signIn(s); after(s.user); };
+  const [demo, setDemo] = useState(false);
+  useEffect(() => { api('/auth/config').then((c) => setDemo(!!c.demo)).catch(() => {}); }, []);
+  const demoLogin = (demoEmail: string) => action.run(async () => done(await api('/auth/login', { body: { email: demoEmail, password: 'Demo!12345' } })));
 
   return (
     <AuthShell title={t('Connexion')} subtitle={t('Heureux de vous revoir.')}>
+      {demo && (
+        <div className="mb-5 rounded-xl bg-brand-50 p-4">
+          <p className="text-sm font-medium text-ink">{t('Site de démonstration')}</p>
+          <p className="mt-0.5 text-xs text-ink-soft">{t('Entrez en un geste avec un compte d’essai.')}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={action.busy} onClick={() => demoLogin('client@demo.ma')}>{t('Client')}</Button>
+            <Button type="button" size="sm" variant="outline" disabled={action.busy} onClick={() => demoLogin('pro1@demo.ma')}>{t('Professionnel')}</Button>
+          </div>
+        </div>
+      )}
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); action.run(async () => done(await api('/auth/login', { body: { email, password } }))); }}>
         <Field label={t('Adresse email')}><Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" /></Field>
         <Field label={t('Mot de passe')}><Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" /></Field>

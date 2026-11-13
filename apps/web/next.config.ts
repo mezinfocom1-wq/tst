@@ -6,7 +6,8 @@ const API_URL = process.env.API_URL ?? 'http://localhost:4000';
 const ALLOW_FRAMING = process.env.ALLOW_FRAMING === 'true';
 
 const config: NextConfig = {
-  output: 'standalone',
+  // La sortie « standalone » sert à l'image Docker ; ailleurs, le site se lance avec `next start`.
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   poweredByHeader: false,
   // L'API est servie sous la même origine que le site : les cookies de session restent « same-site ».
   async rewrites() {

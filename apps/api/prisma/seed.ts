@@ -43,8 +43,12 @@ const SERVICES: Record<string, [string, string, number, number][]> = {
 };
 
 async function main() {
-  const email = (process.env.SUPER_ADMIN_EMAIL ?? 'admin@example.com').toLowerCase();
-  const password = process.env.SUPER_ADMIN_PASSWORD ?? 'ChangeMe!12345';
+  const email = (process.env.SUPER_ADMIN_EMAIL || 'admin@example.com').trim().toLowerCase();
+  const password = process.env.SUPER_ADMIN_PASSWORD || 'ChangeMe!12345';
+  // En ligne, pas de mot de passe par défaut connu de tous : la mise en service échoue tant qu'il n'est pas choisi.
+  if (process.env.NODE_ENV === 'production' && (!process.env.SUPER_ADMIN_PASSWORD || password.length < 10 || password === 'ChangeMe!12345')) {
+    throw new Error('SUPER_ADMIN_PASSWORD doit être défini (10 caractères minimum) avant la mise en ligne');
+  }
   await prisma.user.upsert({
     where: { email },
     create: { email, passwordHash: await hash(password), role: 'SUPER_ADMIN', firstName: 'Super', lastName: 'Admin', emailVerifiedAt: new Date() },

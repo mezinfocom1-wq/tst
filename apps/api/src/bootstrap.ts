@@ -9,7 +9,7 @@ import { join } from 'path';
 /** Configuration commune à l'application réelle et aux tests. */
 export function configureApp(app: INestApplication) {
   const express = app as NestExpressApplication;
-  express.set('trust proxy', 1);
+  express.set('trust proxy', config.trustProxy);
   app.setGlobalPrefix('api');
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cookieParser());

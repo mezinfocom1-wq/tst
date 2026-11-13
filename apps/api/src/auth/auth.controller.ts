@@ -97,7 +97,7 @@ export class AuthController {
 
   @Public() @Get('auth/config')
   authConfig() {
-    return { googleClientId: config.googleClientId || null };
+    return { googleClientId: config.googleClientId || null, demo: config.demoMode };
   }
 
   @ApiBearerAuth() @Get('me')

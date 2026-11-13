@@ -694,3 +694,24 @@ describe('fuseau horaire', () => {
     expect(res.body.transitions.every((t: { offsetMin: number }) => [0, 60].includes(t.offsetMin))).toBe(true);
   });
 });
+
+describe('mode démonstration', () => {
+  it("vérifie d'office l'email à l'inscription et l'annonce à la page de connexion, uniquement quand il est activé", async () => {
+    const { config } = await import('../src/common/config');
+    expect((await ctx.http().get('/api/auth/config').expect(200)).body.demo).toBe(false);
+    const normal = await newUser(ctx, { verified: false });
+    expect((await ctx.http().get('/api/me').set(auth(normal))).body.emailVerified).toBe(false);
+
+    config.demoMode = true;
+    try {
+      expect((await ctx.http().get('/api/auth/config')).body.demo).toBe(true);
+      const demo = await newUser(ctx, { verified: false });
+      expect((await ctx.http().get('/api/me').set(auth(demo))).body.emailVerified).toBe(true);
+      // Le mode démonstration n'accorde aucun droit : le rôle reste « client ».
+      expect((await ctx.http().get('/api/me').set(auth(demo))).body.role).toBe('CLIENT');
+      await ctx.http().get('/api/admin/stats').set(auth(demo)).expect(403);
+    } finally {
+      config.demoMode = false;
+    }
+  });
+});

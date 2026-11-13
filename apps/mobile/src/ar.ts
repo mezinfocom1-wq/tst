@@ -566,4 +566,7 @@ export const AR: Record<string, string> = {
   "Déplacer au {date} à {time}": "تغيير إلى {date} على الساعة {time}",
   "Choisissez un créneau": "اختر موعدا",
   "Le client est prévenu du changement d’horaire.": "يتم إخبار الزبون بتغيير الموعد.",
+  // ─── Mode démonstration ───
+  "Site de démonstration": "موقع تجريبي",
+  "Entrez en un geste avec un compte d’essai.": "ادخل بنقرة واحدة بحساب تجريبي.",
 };

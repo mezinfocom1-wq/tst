@@ -1,0 +1,44 @@
+# Mise en ligne de démonstration sur Render (https://render.com).
+# Crée une base PostgreSQL et un service Web qui fait tourner le site et l'API ensemble.
+# Les formules gratuites conviennent pour un essai : le service s'endort après 15 minutes sans visite
+# (premier chargement lent), les fichiers envoyés ne sont pas conservés et la base gratuite expire au bout de 30 jours.
+# Pour une vraie mise en service : voir docs/03-exploitation.md.
+
+databases:
+  - name: salonat-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "16"
+    databaseName: salon
+    user: salon
+
+services:
+  - type: web
+    name: salonat
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: bash deploy/render-build.sh
+    startCommand: node deploy/start-all.mjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22.12.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: salonat-db
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      # Compte Super Admin : à saisir à la création (mot de passe de 10 caractères minimum).
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      # Démonstration : salons et comptes d'essai, pas de vérification d'email. À retirer pour une vraie mise en service.
+      - key: SEED_DEMO
+        value: "true"
+      - key: DEMO_MODE
+        value: "true"

@@ -42,6 +42,8 @@ export class AuthService {
         email, passwordHash: await argon2.hash(dto.password, { type: argon2.argon2id }),
         firstName: dto.firstName.trim(), lastName: dto.lastName.trim(),
         phone: dto.phone, locale: dto.locale ?? 'fr',
+        // En mode démonstration, aucun email ne peut être envoyé : l'adresse est considérée comme vérifiée.
+        emailVerifiedAt: config.demoMode ? new Date() : null,
       },
     });
     await this.sendVerification(user);

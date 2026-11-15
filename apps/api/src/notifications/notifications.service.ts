@@ -13,14 +13,15 @@ export interface PushProvider {
 /** Envoi via le service Expo, qui relaie vers FCM (Android) et APNs (iOS). */
 class ExpoPushProvider implements PushProvider {
   async send(tokens: string[], message: { title: string; body: string; data?: Record<string, unknown> }) {
-    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+    // Le type est restreint à ce qui sert ici : selon l'outil de compilation, le type global « Response » diffère.
+    const res = (await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         ...(config.expoAccessToken ? { authorization: `Bearer ${config.expoAccessToken}` } : {}),
       },
       body: JSON.stringify(tokens.map((to) => ({ to, sound: 'default', ...message }))),
-    });
+    })) as unknown as { ok: boolean; status: number };
     if (!res.ok) throw new Error(`Expo push HTTP ${res.status}`);
   }
 }

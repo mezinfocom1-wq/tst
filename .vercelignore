@@ -1,0 +1,8 @@
+# Fichiers inutiles à la construction du site et de l'API sur Vercel.
+apps/mobile
+docs
+deploy
+.github
+**/test
+**/e2e
+**/uploads

@@ -12,6 +12,8 @@ Français et arabe (RTL), dirham, fuseau horaire du Maroc.
 
 Documentation : [cahier des charges et état de réalisation](docs/01-cahier-des-charges.md) · [architecture](docs/02-architecture.md) · [déploiement et exploitation](docs/03-exploitation.md).
 
+**Démonstration en ligne : <https://salonat-alpha.vercel.app>** — boutons d'essai « Client » et « Professionnel » sur la page de connexion.
+
 ## Démarrage en développement
 
 Prérequis : Node.js 22, pnpm 10, PostgreSQL 16.

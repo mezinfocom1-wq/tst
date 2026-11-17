@@ -17,6 +17,13 @@ export function configureApp(app: INestApplication) {
   app.enableCors({ origin: [config.webUrl], credentials: true });
   // Les propriétés inconnues sont rejetées : aucune donnée non prévue n'atteint le code métier.
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  // Hébergement « serverless » (DISABLE_SSE=true) : pas de flux temps réel, car chaque requête peut tomber sur une
+  // instance différente. La réponse 204 indique au navigateur de ne pas se reconnecter ; les pages relisent
+  // alors l'état périodiquement (toutes les 10 à 20 secondes).
+  express.use((req: Request, res: Response, next: NextFunction) => {
+    if (process.env.DISABLE_SSE === 'true' && req.method === 'GET' && /\/queue\/stream$/.test(req.path)) return res.status(204).end();
+    next();
+  });
   // Pilote de stockage « db » : les fichiers publics sont lus dans la base (identifiants aléatoires, donc cache long).
   express.use('/uploads/public', async (req: Request, res: Response, next: NextFunction) => {
     if (config.storage.driver !== 'db' || req.method !== 'GET') return next();

@@ -1,4 +1,4 @@
-# Fichiers inutiles à la construction du site et de l'API sur Vercel.
+# Fichiers exclus de l'envoi vers Vercel (site et API).
 apps/mobile
 docs
 deploy
@@ -6,3 +6,9 @@ deploy
 **/test
 **/e2e
 **/uploads
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/.env.local
+**/*.tsbuildinfo

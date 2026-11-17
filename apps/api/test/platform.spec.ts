@@ -760,3 +760,16 @@ describe('hébergement sans disque persistant', () => {
     }
   });
 });
+
+describe('mode serverless', () => {
+  it('coupe le flux temps réel avec DISABLE_SSE (réponse 204, sans reconnexion)', async () => {
+    const { salon } = await newPublishedSalon(ctx, admin);
+    process.env.DISABLE_SSE = 'true';
+    try {
+      await ctx.http().get(`/api/salons/${salon.id}/queue/stream`).expect(204);
+      await ctx.http().get(`/api/salons/${salon.id}/queue`).expect(200);
+    } finally {
+      delete process.env.DISABLE_SSE;
+    }
+  });
+});
